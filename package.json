@@ -23,10 +23,11 @@
   },
   "devDependencies": {
     "html-webpack-plugin": "^5.3.2",
+    "ts-loader": "^9.2.6",
     "webpack": "^5.57.1",
     "webpack-cli": "^4.9.0",
     "webpack-dev-server": "^4.3.1",
-    "ts-loader": "^9.2.6"
+    "webpack-glsl-loader": "^1.0.1"
   },
   "homepage": "https://github.com/Cpaster/play.gl#readme"
 }

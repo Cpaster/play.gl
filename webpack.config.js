@@ -6,10 +6,15 @@ module.exports = {
   entry: './src/index.ts',
   module: {
     rules: [{
+      test: /\.glsl$/,
+      use: 'webpack-glsl-loader',
+      exclude: /node_modules/,
+    }, {
       test: /\.tsx?$/,
       use: 'ts-loader',
       exclude: /node_modules/,
     }]
+    
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js']
