@@ -127,16 +127,10 @@ export default class PlayGL {
 
   // uniform[1234](u?i|f)v?
   // uniformMatrix[234]x[234]fv()
-  setUniform(name: string, v) {
+  setUniform(name: string, v: number | Array<number>) {
     const {gl, program} = this;
-    let value: Array<number> = v;
-    // if (typeof v !== 'number') {
-    //   throw new Error('value should type: number or Float32Array');
-    // }
-    // value = v;
-    if (typeof v === 'number') {
-      value = [v];
-    }
+    let value: Array<number> = Array.isArray(v) ? v : [v];
+    
     if (this.program._uniform[name]) {
       const uniformLocation = gl.getUniformLocation(program, name);
       const {type} = this.program._uniform[name];

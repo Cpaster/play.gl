@@ -19,3 +19,13 @@ playGl.addMeshData({
 playGl.setUniform('color', [1, 0, 1]);
 
 playGl.render();
+
+let time = 0;
+
+function changeColor() {
+  time++;
+  playGl.setUniform('color', [Math.sin(time / 10), Math.sin(time / 100), 0]);
+  requestAnimationFrame(changeColor);
+}
+
+changeColor();
