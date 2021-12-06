@@ -17,6 +17,8 @@ interface PlayGlProgram extends WebGLProgram {
   _uniform?: Record<string, {type: string, value?: number | Array<number> | Float32Array}>;
   _dimension?: number;
   _texCoordSize?: number;
+  _bindTextures?: Array<any>;
+  _samplerMap?: Record<string, number>;
 }
 
 interface createMeshDataParam {

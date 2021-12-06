@@ -3,7 +3,8 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   mode: 'development',
-  entry: './src/index.ts',
+  // entry: './src/index.ts',
+  entry: './demo/index.ts',
   module: {
     rules: [{
       test: /\.glsl$/,
@@ -24,7 +25,7 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
   },
   devServer: {
-    static: './dist',
+    static: './',
   },
   plugins: [
     new HtmlWebpackPlugin({

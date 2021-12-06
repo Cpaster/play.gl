@@ -1,4 +1,4 @@
-import { pointsToBuffer, createProgram } from './utils/helper';
+import { pointsToBuffer, createProgram, loadImage } from './utils/helper';
 import DEFAULT_VERTEX from './defaultVertexShader.glsl';
 import DEFAULT_FRAGMENT from './defaultFragmentShader.glsl';
 
@@ -15,14 +15,14 @@ const uniformTypeMap = {
   mat2: 'Matrix2fv',
   mat3: 'Matrix3fv',
   mat4: 'Matrix4fv',
-  // sampler1D: 'sampler1D',
-  // sampler2D: 'sampler2D',
-  // sampler3D: 'sampler3D',
-  // samplerCube: 'samplerCube',
-  // sampler1DShadow: 'sampler1DShadow',
-  // sampler2DShadow: 'sampler2DShadow',
-  // sampler2DRect: 'sampler2DRect',
-  // sampler2DRectShadow: 'sampler2DRectShadow',
+  sampler1D: 'sampler1D',
+  sampler2D: 'sampler2D',
+  sampler3D: 'sampler3D',
+  samplerCube: 'samplerCube',
+  sampler1DShadow: 'sampler1DShadow',
+  sampler2DShadow: 'sampler2DShadow',
+  sampler2DRect: 'sampler2DRect',
+  sampler2DRectShadow: 'sampler2DRectShadow',
 };
 
 export default class PlayGL {
@@ -31,6 +31,7 @@ export default class PlayGL {
   gl: WebGLRenderingContext;
   meshDatas: Array<MeshData>;
   program: PlayGlProgram;
+  _max_texture_image_units: number;
 
   static defaultOptions = {
     preserveDrawingBuffer: true,
@@ -73,6 +74,7 @@ export default class PlayGL {
     if (vTexCoord > -1) {
       this.program._buffers.textCoordBuffer = gl.createBuffer();
     }
+
     const texCoordPattern = new RegExp(`(?:attribute|in) vec(\\d) ${this.options.vertexTextuseCoordsName}`, 'im');
     matched = vertexCode.match(texCoordPattern);
     if(matched) {
@@ -107,6 +109,8 @@ export default class PlayGL {
        * https://developer.mozilla.org/zh-CN/docs/Web/API/WebGL2RenderingContext/uniformMatrix
       **/
     this.program._uniform = {};
+    this.program._samplerMap = {};
+    this.program._bindTextures = [];
     matched?.forEach((m): void => {
       const _matched = m.match(/^\s*uniform\s+(\w+)\s+(\w+)(\[\d+\])?/);
       let [type, name, isVector] = _matched.splice(1);
@@ -127,24 +131,36 @@ export default class PlayGL {
 
   // uniform[1234](u?i|f)v?
   // uniformMatrix[234]x[234]fv()
-  setUniform(name: string, v: number | Array<number>) {
+  setUniform(name: string, v) {
     const {gl, program} = this;
     let value: Array<number> = Array.isArray(v) ? v : [v];
-    
-    if (this.program._uniform[name]) {
+    const uniformInfo = program._uniform[name];
+    if (uniformInfo) {
       const uniformLocation = gl.getUniformLocation(program, name);
-      const {type} = this.program._uniform[name];
-      const setUniform = gl[`uniform${type}`].bind(gl);
-      const isMatrix = type.indexOf('Matrix') > -1;
-      const isVector = !isMatrix && /v$/.test(type);
-      if (isMatrix) {
-        setUniform(uniformLocation, false, value);
-      } else if (isVector) {
-        setUniform(uniformLocation, value);
+      const { type } = uniformInfo;
+      if (/^sampler/.test(type)) {
+        const idx = program._samplerMap[name] ? program._samplerMap[name] : program._bindTextures?.length;
+        program._bindTextures[idx] = v;
+        gl.activeTexture(gl.TEXTURE0 + idx);
+        gl.bindTexture(gl.TEXTURE_2D, v);
+        if (!program._samplerMap[name]) {
+          program._samplerMap[name] = idx;
+          gl.uniform1i(uniformLocation, idx);
+          uniformInfo.value = idx;
+        }
       } else {
-        setUniform(uniformLocation, ...value);
+        const setUniform = gl[`uniform${type}`].bind(gl);
+        const isMatrix = type.indexOf('Matrix') > -1;
+        const isVector = !isMatrix && /v$/.test(type);
+        if (isMatrix) {
+          setUniform(uniformLocation, false, value);
+        } else if (isVector) {
+          setUniform(uniformLocation, value);
+        } else {
+          setUniform(uniformLocation, ...value);
+        }
       }
-      this.program._uniform[name].value = value;
+      uniformInfo.value = value;
       this.render();
     } else {
       console.warn(`${name} isn’t exist in uniform`);
@@ -153,6 +169,37 @@ export default class PlayGL {
 
   getUniform(name: string) {
     return this.program._uniform[name].value || '';
+  }
+
+  async loadTexture(src: string) {
+    const texture = await loadImage(src);
+    return this.createTexture(texture);
+  }
+
+  createTexture(img) {
+    const {gl} = this;
+    this._max_texture_image_units = gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+    gl.activeTexture(gl.TEXTURE0 + this._max_texture_image_units - 1);
+
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+    if (img) {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+    }
+
+    // TODO 将其修改为可配置的选项
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+
+    return texture;
   }
   
   use(program: PlayGlProgram) {
@@ -166,6 +213,7 @@ export default class PlayGL {
     gl.enableVertexAttribArray(vPosition);
 
     if (program._buffers.textCoordBuffer) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, program._buffers.textCoordBuffer);
       const location = gl.getAttribLocation(program, options.vertexTextuseCoordsName);
       gl.vertexAttribPointer(location, program._texCoordSize, gl.FLOAT, false, 0, 0);
       gl.enableVertexAttribArray(location);
@@ -232,7 +280,7 @@ export default class PlayGL {
   _draw() {
     const {gl, program} = this;
     this.meshDatas.forEach(meshData => {
-      const {position, cells, cellCount, uniforms, attributes, textureCoord } = meshData;
+      const {position, cells, cellCount, attributes, textureCoord } = meshData;
 
       gl.bindBuffer(gl.ARRAY_BUFFER, program._buffers.vertexBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, position, gl.STATIC_DRAW);
@@ -253,13 +301,6 @@ export default class PlayGL {
       if (this.program._buffers.textCoordBuffer && textureCoord) {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.program._buffers.textCoordBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, textureCoord?.data, gl.STATIC_DRAW);
-      }
-
-      if (uniforms) {
-        // gl.uniform1f
-
-        ///https://developer.mozilla.org/zh-CN/docs/Web/API/WebGL2RenderingContext/uniform
-        console.log(uniforms);
       }
 
       if (cells) {

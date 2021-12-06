@@ -50,3 +50,30 @@ export const createProgram = (gl: WebGLRenderingContext, vertexCode: string, fra
     gl.deleteShader(fragmentShader);
     return program;
 }
+
+const imagesCache = {};
+export const loadImage = (src: string) => {
+  if (!imagesCache[src]) {
+    const img = new Image();
+    if(typeof src === 'string'
+      && !(typeof location === 'object' && /^file:/.test(location.href)) // eslint-disable-line no-restricted-globals
+      && !/^data:/.test(src)) {
+      img.crossOrigin = 'anonymous';
+    }
+    imagesCache[src] = new Promise((resolve) => {
+      img.onload = () => {
+        if (typeof createImageBitmap === 'function') {
+          createImageBitmap(img, { imageOrientation: 'flipY' }).then((bitmap) => {
+            imagesCache[src] = bitmap;
+            resolve(bitmap);
+          })
+        } else {
+          imagesCache[src] = img;
+          resolve(img);
+        }
+      }
+      img.src = src;
+    })
+  }
+  return imagesCache[src];
+}
