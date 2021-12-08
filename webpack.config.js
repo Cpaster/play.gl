@@ -4,7 +4,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 module.exports = {
   mode: 'development',
   // entry: './src/index.ts',
-  entry: './demo/index.ts',
+  entry: './demo/cube.ts',
   module: {
     rules: [{
       test: /\.glsl$/,

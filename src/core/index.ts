@@ -50,6 +50,7 @@ export default class PlayGL {
 
   clear() {
     const { gl } = this;
+    //FRAMEBUFFER_SRGB
     const {width, height} = this.canvas;
     gl.viewport(0, 0, width, height);
     gl.clearColor(0.0, 0.0, 0.0, 0.0);

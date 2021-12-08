@@ -14,16 +14,11 @@ const canvas = document.getElementById('page');
   playGl.addMeshData({
     positions: [[1, 1, 0], [1, -1, 0], [-1, -1, 0], [-1, 1, 0]],
     textureCoord: [[1, 1], [1, 0], [0, 0], [0, 1]],
-    // textureCoord: [[0, 0], [0, ], [1, 1], [0, 1]],
     cells: [[0, 1, 2], [2, 3, 0]]
     // attributes: {
     //   color: [[1, 0, 0, 1], [0, 1, 0, 1], [0, 0, 1, 1]]
     // }
   })
-
-  // playGl.setUniform('color', [1, 0, 1]);
-
-  // playGl.render();
 
   const wallTexture = await playGl.loadTexture('./demo/img/wall.jpg')
   playGl.setUniform('wall', wallTexture);
