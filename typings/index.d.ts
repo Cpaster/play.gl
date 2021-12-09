@@ -5,6 +5,7 @@ interface PlayGLOption extends WebGLContextAttributes {
   stencil?: boolean;
   vertexPositionName?: string;
   vertexTextuseCoordsName?: string;
+  autoUpdate?: boolean;
 }
 
 interface PlayGlProgram extends WebGLProgram {

@@ -35,6 +35,8 @@ export default class PlayGL {
 
   static defaultOptions = {
     preserveDrawingBuffer: true,
+    depth: true,
+    autoUpdate: false,
     vertexPositionName: 'a_vertexPosition',
     vertexTextuseCoordsName: 'a_textureCoord'
   };
@@ -162,7 +164,9 @@ export default class PlayGL {
         }
       }
       uniformInfo.value = value;
-      this.render();
+      if (this.options.autoUpdate) {
+        this.render();
+      }
     } else {
       console.warn(`${name} isn’t exist in uniform`);
     }
