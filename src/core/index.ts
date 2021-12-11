@@ -2,7 +2,6 @@ import { pointsToBuffer, createProgram, loadImage } from './utils/helper';
 import DEFAULT_VERTEX from './defaultVertexShader.glsl';
 import DEFAULT_FRAGMENT from './defaultFragmentShader.glsl';
 
-
 const uniformTypeMap = {
   int: '1i',
   ivec2: '2i',
@@ -36,6 +35,7 @@ export default class PlayGL {
   static defaultOptions = {
     preserveDrawingBuffer: true,
     depth: true,
+    stencil: false,
     autoUpdate: false,
     vertexPositionName: 'a_vertexPosition',
     vertexTextuseCoordsName: 'a_textureCoord'
@@ -323,7 +323,7 @@ export default class PlayGL {
     if (depth) {
       gl.enable(gl.DEPTH_TEST);
     }
-
+    this.clear();
     gl.clear(
       gl.COLOR_BUFFER_BIT
       | (depth ? this.gl.DEPTH_BUFFER_BIT : 0)

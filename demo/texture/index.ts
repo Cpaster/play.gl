@@ -1,5 +1,8 @@
-import PlayGL from '../src/core';
-import * as mat4 from '../src/math/mat4';
+import PlayGL from '../../src/core';
+import * as mat4 from '../../src/math/mat4';
+
+import vertexShader from './vertexShader.glsl';
+import framentShader from './fragmentShader.glsl';
 
 const canvas = document.getElementById('page');
 
@@ -8,13 +11,13 @@ const canvas = document.getElementById('page');
 
   playGl.clear();
 
-  const program = playGl.createProgram();
+  const program = playGl.createProgram(framentShader, vertexShader);
 
   playGl.use(program);
 
   playGl.addMeshData({
     positions: [
-      [-0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, 0.5, -0.5], [-0.5, 0.5,-0.5], [-0.5, -0.5, -0.5],
+      [-0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, 0.5, -0.5], [0.5, 0.5, -0.5], [-0.5, 0.5,-0.5], [-0.5, -0.5, -0.5],
       [-0.5, -0.5, 0.5], [0.5, -0.5, 0.5], [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [-0.5, 0.5,0.5], [-0.5, -0.5, 0.5],
       [-0.5, 0.5, 0.5], [-0.5, 0.5, -0.5], [-0.5, -0.5, -0.5], [-0.5, -0.5, -0.5], [-0.5, -0.5,0.5], [-0.5, 0.5, 0.5],
       [0.5, 0.5, 0.5], [0.5, 0.5, -0.5], [0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, -0.5, 0.5], [0.5, 0.5, 0.5],
@@ -38,7 +41,6 @@ const canvas = document.getElementById('page');
   const model = [];
 
   mat4.perspective(perspectiveMatix, Math.PI / 4, width / height, 0.1, 100);
-  // mat4.translate(view, mat4.create(), [0, 0, -3]);
   mat4.rotate(model, mat4.create(), Math.PI / 4, [1, 1, 0]);
 
   const wallTexture = await playGl.loadTexture('./demo/img/wall.jpg')

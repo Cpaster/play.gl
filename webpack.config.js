@@ -3,8 +3,8 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   mode: 'development',
-  // entry: './src/index.ts',
-  entry: './demo/cube.ts',
+  // entry: './demo/texture/index.ts',
+  entry: './demo/light/index.ts',
   module: {
     rules: [{
       test: /\.glsl$/,
