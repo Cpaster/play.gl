@@ -1,4 +1,4 @@
-import PlayGL from '../../src/core/index';
+import PlayGL from '../../src/core';
 import * as mat4 from '../../src/math/mat4';
 
 import vertexShader from './vertexShader.glsl';
@@ -24,6 +24,14 @@ const canvas = document.getElementById('page');
       [-0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, -0.5, 0.5], [0.5, -0.5, 0.5], [-0.5, -0.5,0.5], [-0.5, -0.5, -0.5],
       [-0.5, 0.5, -0.5], [0.5, 0.5, -0.5], [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [-0.5, 0.5, 0.5], [-0.5, 0.5, -0.5]
     ],
+    textureCoord: [
+      [0, 0], [1, 0], [1, 1], [1, 1], [0, 1], [0, 0],
+      [0, 0], [1, 0], [1, 1], [1, 1], [0, 1], [0, 0],
+      [1, 0], [1, 1], [0, 1], [0, 1], [0, 0], [1, 0],
+      [1, 0], [1, 1], [0, 1], [0, 1], [0, 0], [1, 0],
+      [0, 1], [1, 1], [1, 0], [1, 0], [0, 0], [0, 1],
+      [0, 1], [1, 1], [1, 0], [1, 0], [0, 0], [0, 1],
+    ],
     attributes: {
       aNormal: [
         [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1],
@@ -34,37 +42,44 @@ const canvas = document.getElementById('page');
         [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0]
       ]
     }
-  });
+  })
 
+  // set MVP
   const {width, height} = canvas.getBoundingClientRect();
 
   const perspectiveMatix = [];
   const view = [];
+  const model = [];
 
   mat4.perspective(perspectiveMatix, Math.PI / 4, width / height, 0.1, 100);
+  mat4.rotate(model, mat4.create(), Math.PI / 4, [1, 1, 0]);
 
   let viewPosition = [0, 0, 3];
   mat4.lookAt(view, viewPosition, [0, 0, 0], [0, 1, 0]);
   playGl.setUniform('view', view);
-  playGl.setUniform('viewPosition', viewPosition);
   playGl.setUniform('projection', perspectiveMatix);
+  playGl.setUniform('model', model);
 
-  // 灯光
-  playGl.setUniform('objectColor', [1.0, 0.4, 1.0, 1.0]);
-  // playGl.setUniform('lightColor', [1.0, 1.0, 1.0]);
-  playGl.setUniform('lightPosition', [1.2, 1, 2]);
-  playGl.setUniform('ambientStrength', 0.5);
-  playGl.setUniform('shininess', 32.0);
+  // 添加光照效果
+  const diffuseTexture = await playGl.loadTexture('./demo/textureLight/img/box.jpg');
+  const specularTexture = await playGl.loadTexture('./demo/textureLight/img/box_specular.png');
+  playGl.setUniform('material.diffuse', diffuseTexture);
+  playGl.setUniform('material.specular', specularTexture);
+
+  playGl.setUniform('material.shininess', 32.0);
+
+  playGl.setUniform('light.position', [1.2, 1, 2]);
+  playGl.setUniform('light.diffuse', [0.5, 0.5, 0.5]);
+  playGl.setUniform('light.ambient', [0.5, 0.5, 0.5]);
+  playGl.setUniform('light.specular', [1.0, 1.0, 1.0]);
 
   let time = 0;
 
   function updateCamera() {
     time++;
-    const newModel = mat4.rotate([], mat4.create(), time / 100, [1, 1, 0]);
+    const newModel = mat4.rotate([], mat4.create(), time / 100, [0, 1, 1]);
     const normalModel = mat4.transpose([], mat4.invert([], newModel));
-
-    const [x, y, z] = [Math.sin(time * 0.007), Math.sin(time * 0.021), Math.sin(time * 0.03)];
-    playGl.setUniform('lightColor', [x, y, z]);
+    
     playGl.setUniform('model', newModel);
     playGl.setUniform('normalModel', normalModel);
 
@@ -73,4 +88,9 @@ const canvas = document.getElementById('page');
   }
 
   updateCamera();
+
+  // playGl.render();
+  
+  // playGl.setUniform('view', view);
+
 })();

@@ -7,6 +7,7 @@ uniform vec3 lightColor;
 uniform vec3 lightPosition;
 uniform float ambientStrength;
 uniform vec3 viewPosition;
+uniform float shininess;
 
 uniform mat4 normalModel;
 
@@ -25,8 +26,8 @@ void main() {
   // specular
   vec3 viewDir = normalize(viewPosition - FragPos);
   vec3 reflectDir = reflect(-lightDirection, norm);
-  float spec = pow(max(dot(viewDir, reflectDir), 0.0), 10.0);
-  vec3 specular = 0.5 * spec * lightColor;
+  float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+  vec3 specular = spec * lightColor;
   
   gl_FragColor = vec4((diffuse + amibent + specular) * objectColor, 1.0);
 }

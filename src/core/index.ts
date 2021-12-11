@@ -86,7 +86,6 @@ export default class PlayGL {
 
     const attributePattern = /^\s*(?:attribute|in) (\w+?)(\d*) (\w+)/gim;
     matched = vertexCode.match(attributePattern);
-    
     if(matched) {
       for (let i = 0; i < matched?.length; i++) {
         const patt = /^\s*(?:attribute|in) (\w+?)(\d*) (\w+)/im;
@@ -117,12 +116,33 @@ export default class PlayGL {
     matched?.forEach((m): void => {
       const _matched = m.match(/^\s*uniform\s+(\w+)\s+(\w+)(\[\d+\])?/);
       let [type, name, isVector] = _matched.splice(1);
-      type = uniformTypeMap[type];
-      if (type.indexOf('Matrix') > -1 && isVector) {
-        type += 'v';
-      }
-      this.program._uniform[name] = {
-        type
+      if (type && !uniformTypeMap[type]) {
+        const linePatt = '\\s*\\n*\\s*';
+        const pattern = new RegExp(`^${linePatt}struct ${type} {${linePatt}((((\\w)\\s*)+);${linePatt})+${linePatt}}`, 'gim');
+        const _m = fragmentCode.match(pattern);
+        if (_m??[0]) {
+          const structElementsPattern = /\s*(\w+)\s+(\w+)(\[\d+\])?;/mg;
+          const structElms = _m[0]?.match(structElementsPattern);
+          structElms.forEach(elm => {
+            const _elm = elm.match(/^\s*(\w+)\s+(\w+)(\[\d+\])?/);
+            let [elmType, subName] = _elm.splice(1);
+            type = uniformTypeMap[elmType] || '';
+            if (type.indexOf('Matrix') > -1 && isVector) {
+              type += 'v';
+            }
+            this.program._uniform[`${name}.${subName}`] = {
+              type
+            }
+          })
+        }
+      } else {
+        type = uniformTypeMap[type] || '';
+        if (type.indexOf('Matrix') > -1 && isVector) {
+          type += 'v';
+        }
+        this.program._uniform[name] = {
+          type
+        }
       }
     })
 
