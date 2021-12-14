@@ -43,7 +43,7 @@ const canvas = document.getElementById('page');
   mat4.perspective(perspectiveMatix, Math.PI / 4, width / height, 0.1, 100);
   mat4.rotate(model, mat4.create(), Math.PI / 4, [1, 1, 0]);
 
-  const wallTexture = await playGl.loadTexture('./demo/img/wall.jpg')
+  const wallTexture = await playGl.loadTexture('./demo/texture/img/wall.jpg')
   playGl.setUniform('wall', wallTexture);
 
   playGl.setUniform('projection', perspectiveMatix);

@@ -117,27 +117,29 @@ export default class PlayGL {
       const _matched = m.match(/^\s*uniform\s+(\w+)\s+(\w+)(\[\d+\])?/);
       let [type, name, isVector] = _matched.splice(1);
       if (type && !uniformTypeMap[type]) {
+        // uniform为struct的结构
         const linePatt = '\\s*\\n*\\s*';
-        const pattern = new RegExp(`^${linePatt}struct ${type} {${linePatt}((((\\w)\\s*)+);${linePatt})+${linePatt}}`, 'gim');
+        const pattern = new RegExp(`^${linePatt}struct ${type} {${linePatt}((((\\w)\\s*\\[*\\]*)+);${linePatt})+${linePatt}}`, 'gim');
         const _m = fragmentCode.match(pattern);
+        const structName = !isVector ? name : `${name}\\[(\\d)+\\]`;
         if (_m??[0]) {
           const structElementsPattern = /\s*(\w+)\s+(\w+)(\[\d+\])?;/mg;
           const structElms = _m[0]?.match(structElementsPattern);
           structElms.forEach(elm => {
             const _elm = elm.match(/^\s*(\w+)\s+(\w+)(\[\d+\])?/);
-            let [elmType, subName] = _elm.splice(1);
+            let [elmType, subName, subIsVector] = _elm.splice(1);
             type = uniformTypeMap[elmType] || '';
-            if (type.indexOf('Matrix') > -1 && isVector) {
+            if (type.indexOf('Matrix') !== 0 && subIsVector) {
               type += 'v';
             }
-            this.program._uniform[`${name}.${subName}`] = {
+            this.program._uniform[`${structName}.${subName}`] = {
               type
             }
           })
         }
       } else {
         type = uniformTypeMap[type] || '';
-        if (type.indexOf('Matrix') > -1 && isVector) {
+        if (type.indexOf('Matrix') !== 0 && isVector) {
           type += 'v';
         }
         this.program._uniform[name] = {
@@ -152,44 +154,61 @@ export default class PlayGL {
     return program;
   }
 
+  _setUniform(name, type, v) {
+    const {program, gl} = this;
+    const uniformInfo = program._uniform[name];
+    const uniformLocation = gl.getUniformLocation(program, name);
+
+    if (/^sampler/.test(type)) {
+      const idx = program._samplerMap[name] ? program._samplerMap[name] : program._bindTextures?.length;
+      program._bindTextures[idx] = v;
+      gl.activeTexture(gl.TEXTURE0 + idx);
+      gl.bindTexture(gl.TEXTURE_2D, v);
+      if (!program._samplerMap[name]) {
+        program._samplerMap[name] = idx;
+        gl.uniform1i(uniformLocation, idx);
+        uniformInfo.value = idx;
+      }
+    } else {
+      let value: Array<number> = Array.isArray(v) ? v : [v];
+
+      const setUniform = gl[`uniform${type}`].bind(gl);
+      const isMatrix = type.indexOf('Matrix') > -1;
+      const isVector = !isMatrix && /v$/.test(type);
+      if (isMatrix) {
+        setUniform(uniformLocation, false, value);
+      } else if (isVector) {
+        setUniform(uniformLocation, value);
+      } else {
+        setUniform(uniformLocation, ...value);
+      }
+      if (uniformInfo) {
+        
+      }
+      uniformInfo ? (uniformInfo.value = value) : 
+      (program._uniform[name] = {
+        type,
+        value
+      });
+    }
+  }
+
   // uniform[1234](u?i|f)v?
   // uniformMatrix[234]x[234]fv()
   setUniform(name: string, v) {
-    const {gl, program} = this;
-    let value: Array<number> = Array.isArray(v) ? v : [v];
-    const uniformInfo = program._uniform[name];
-    if (uniformInfo) {
-      const uniformLocation = gl.getUniformLocation(program, name);
-      const { type } = uniformInfo;
-      if (/^sampler/.test(type)) {
-        const idx = program._samplerMap[name] ? program._samplerMap[name] : program._bindTextures?.length;
-        program._bindTextures[idx] = v;
-        gl.activeTexture(gl.TEXTURE0 + idx);
-        gl.bindTexture(gl.TEXTURE_2D, v);
-        if (!program._samplerMap[name]) {
-          program._samplerMap[name] = idx;
-          gl.uniform1i(uniformLocation, idx);
-          uniformInfo.value = idx;
-        }
-      } else {
-        const setUniform = gl[`uniform${type}`].bind(gl);
-        const isMatrix = type.indexOf('Matrix') > -1;
-        const isVector = !isMatrix && /v$/.test(type);
-        if (isMatrix) {
-          setUniform(uniformLocation, false, value);
-        } else if (isVector) {
-          setUniform(uniformLocation, value);
-        } else {
-          setUniform(uniformLocation, ...value);
-        }
+    const { program } = this;
+
+    Object.entries(program._uniform).forEach(([key, typeValue]) => {
+      const { type } = typeValue;
+      if (key === name) {
+        this._setUniform(name, type, v);
+      } else if (new RegExp(`^${key}$`).test(name)) {
+        this._setUniform(name, type, v);
       }
-      uniformInfo.value = value;
       if (this.options.autoUpdate) {
         this.render();
       }
-    } else {
-      console.warn(`${name} isn’t exist in uniform`);
-    }
+    })
   }
 
   getUniform(name: string) {
@@ -336,7 +355,11 @@ export default class PlayGL {
     })
   }
 
-  render() {
+  draw() {
+    this.render(true);
+  }
+
+  render(noClear?: boolean) {
     const {gl, options} = this;
     const { depth, stencil } = options;
 
@@ -344,12 +367,13 @@ export default class PlayGL {
       gl.enable(gl.DEPTH_TEST);
     }
     this.clear();
-    gl.clear(
-      gl.COLOR_BUFFER_BIT
-      | (depth ? this.gl.DEPTH_BUFFER_BIT : 0)
-      | (stencil ? this.gl.STENCIL_BUFFER_BIT : 0)
-    );
-
+    if (!noClear) {
+      gl.clear(
+        gl.COLOR_BUFFER_BIT
+        | (depth ? this.gl.DEPTH_BUFFER_BIT : 0)
+        | (stencil ? this.gl.STENCIL_BUFFER_BIT : 0)
+      );
+    }
     this._draw();
   }
 }
