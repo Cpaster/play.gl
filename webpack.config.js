@@ -5,7 +5,7 @@ module.exports = {
   mode: 'development',
   // entry: './demo/texture/index.ts',
   // entry: './demo/light/index.ts',
-  entry: './example/lightCluster/index.ts',
+  entry: './example/depthTestDemo/index.ts',
   module: {
     rules: [{
       test: /\.glsl$/,

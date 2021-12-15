@@ -215,12 +215,19 @@ export default class PlayGL {
     return this.program._uniform[name].value || '';
   }
 
-  async loadTexture(src: string) {
+  async loadTexture(src: string, options?:TextureParams) {
+    options = {
+      wrapS: 'CLAMP_TO_EDGE',
+      wrapT: 'CLAMP_TO_EDGE',
+      minFilter: 'LINEAR',
+      magFilter: 'LINEAR',
+      ...options
+    }
     const texture = await loadImage(src);
-    return this.createTexture(texture);
+    return this.createTexture(texture, options);
   }
 
-  createTexture(img) {
+  createTexture(img, options: TextureParams) {
     const {gl} = this;
     this._max_texture_image_units = gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
     gl.activeTexture(gl.TEXTURE0 + this._max_texture_image_units - 1);
@@ -236,11 +243,11 @@ export default class PlayGL {
     }
 
     // TODO 将其修改为可配置的选项
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, this.gl[options.wrapS]);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, this.gl[options.wrapT]);
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this.gl[options.minFilter]);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this.gl[options.magFilter]);
     gl.bindTexture(gl.TEXTURE_2D, null);
 
     return texture;
@@ -248,6 +255,12 @@ export default class PlayGL {
   
   use(program: PlayGlProgram) {
     const { gl, options } = this;
+    const {depth} = options;
+    
+    if (depth) {
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthFunc(gl.LESS);
+    }
     
     gl.useProgram(program);
     
@@ -363,9 +376,6 @@ export default class PlayGL {
     const {gl, options} = this;
     const { depth, stencil } = options;
 
-    if (depth) {
-      gl.enable(gl.DEPTH_TEST);
-    }
     this.clear();
     if (!noClear) {
       gl.clear(

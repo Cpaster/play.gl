@@ -14,7 +14,6 @@ export default class lightCluster {
     this.directionLights = [];
   }
   addDirectionLight(light: DirectionLightStruct) {
-    console.log(light);
     this.directionLights.push(light);
   }
 

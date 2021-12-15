@@ -45,3 +45,10 @@ interface MeshData {
     size: number;
   };
 }
+
+interface TextureParams {
+  wrapS?: 'REPEAT' | 'MIRRORED_REPEAT' | 'CLAMP_TO_EDGE' | 'CLAMP_TO_BORDER';
+  wrapT?: 'REPEAT' | 'MIRRORED_REPEAT' | 'CLAMP_TO_EDGE' | 'CLAMP_TO_BORDER'
+  minFilter?: 'NEAREST' | 'LINEAR';
+  magFilter?: 'NEAREST' | 'LINEAR';
+}
