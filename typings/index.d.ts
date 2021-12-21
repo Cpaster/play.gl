@@ -10,6 +10,7 @@ interface PlayGLOption extends WebGLContextAttributes {
 
 interface PlayGlProgram extends WebGLProgram {
   _buffers?: Record<string, WebGLBuffer>;
+  meshDatas?: Array<MeshData>;
   _attribute?: Record<string, {
     size: number;
     name: string;
@@ -49,6 +50,6 @@ interface MeshData {
 interface TextureParams {
   wrapS?: 'REPEAT' | 'MIRRORED_REPEAT' | 'CLAMP_TO_EDGE' | 'CLAMP_TO_BORDER';
   wrapT?: 'REPEAT' | 'MIRRORED_REPEAT' | 'CLAMP_TO_EDGE' | 'CLAMP_TO_BORDER'
-  minFilter?: 'NEAREST' | 'LINEAR';
-  magFilter?: 'NEAREST' | 'LINEAR';
+  minFilter?: 'NEAREST' | 'LINEAR' | 'LINEAR_MIPMAP_LINEAR' | 'NEAREST_MIPMAP_NEAREST' | 'LINEAR_MIPMAP_NEAREST' | 'NEAREST_MIPMAP_LINEAR';
+  magFilter?: 'NEAREST' | 'LINEAR' | 'LINEAR_MIPMAP_LINEAR' | 'NEAREST_MIPMAP_NEAREST' | 'LINEAR_MIPMAP_NEAREST' | 'NEAREST_MIPMAP_LINEAR';
 }

@@ -3,15 +3,28 @@ import * as mat4 from '../../src/math/mat4';
 
 import vertexShader from './vertexShader.glsl';
 import framentShader from './fragmentShader.glsl';
+import framentSingleShader from './fragmentSingleShader.glsl';
 
 const canvas = document.getElementById('page');
 
 (async function() {
-  const playGl = new PlayGL(canvas);
+  const playGl = new PlayGL(canvas, {
+    depth: true,
+    stencil: true
+  });
+
+  const {gl} = playGl;
+
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthFunc(gl.LESS);
+  gl.enable(gl.STENCIL_TEST);
+  gl.stencilFunc(gl.NOTEQUAL, 1, 0xFF);
+  gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
 
   playGl.clear();
 
   const program = playGl.createProgram(framentShader, vertexShader);
+  const program2 = playGl.createProgram(framentSingleShader, vertexShader);
 
   playGl.use(program);
 
@@ -24,7 +37,7 @@ const canvas = document.getElementById('page');
   mat4.perspective(perspectiveMatix, Math.PI / 6, width / height, 0.1, 100);
   mat4.rotate(model, mat4.create(), 0, [1, 0, 0]);
 
-  mat4.lookAt(view, [1, 1, 3], [0, 0, 0], [0, 1, 0]);
+  mat4.lookAt(view, [0, 0, 3], [0, 0, 0], [0, 1, 0]);
   playGl.setUniform('view', view);
   playGl.setUniform('projection', perspectiveMatix);
   playGl.setUniform('model', model);
@@ -38,6 +51,7 @@ const canvas = document.getElementById('page');
     wrapT: 'REPEAT'
   })
 
+  gl.stencilMask(0x00);
   // plane
   playGl.addMeshData({
     positions: [
@@ -47,15 +61,14 @@ const canvas = document.getElementById('page');
     textureCoord: [
       [2, 0], [0, 0], [0, 2], [2, 0], [0, 2], [2, 2],
     ],
-    uniforms: {
-      texture1: planeTexture
-    }
   });
-
+  
+  playGl.setUniform('texture1', planeTexture);
   playGl.draw();
 
+  gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
+  gl.stencilMask(0xFF);
   // box
-  // playGl.setUniform('texture1', wallTexture);
   playGl.addMeshData({
     positions: [
       [-0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, 0.5, -0.5], [0.5, 0.5, -0.5], [-0.5, 0.5,-0.5], [-0.5, -0.5, -0.5],
@@ -73,25 +86,45 @@ const canvas = document.getElementById('page');
       [0, 1], [1, 1], [1, 0], [1, 0], [0, 0], [0, 1],
       [0, 1], [1, 1], [1, 0], [1, 0], [0, 0], [0, 1],
     ],
-    uniforms: {
-      texture1: wallTexture
-    }
   });
 
+  playGl.setUniform('texture1', wallTexture);
   playGl.draw();
 
-  let time = 0;
-  const radius = 4;
+  gl.stencilFunc(gl.NOTEQUAL, 1, 0xFF);
+  gl.stencilMask(0x00);
+  gl.disable(gl.DEPTH_TEST);
+  // box
+  playGl.use(program2);
+  playGl.addMeshData({
+    positions: [
+      [-0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, 0.5, -0.5], [0.5, 0.5, -0.5], [-0.5, 0.5,-0.5], [-0.5, -0.5, -0.5],
+      [-0.5, -0.5, 0.5], [0.5, -0.5, 0.5], [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [-0.5, 0.5,0.5], [-0.5, -0.5, 0.5],
+      [-0.5, 0.5, 0.5], [-0.5, 0.5, -0.5], [-0.5, -0.5, -0.5], [-0.5, -0.5, -0.5], [-0.5, -0.5,0.5], [-0.5, 0.5, 0.5],
+      [0.5, 0.5, 0.5], [0.5, 0.5, -0.5], [0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, -0.5, 0.5], [0.5, 0.5, 0.5],
+      [-0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, -0.5, 0.5], [0.5, -0.5, 0.5], [-0.5, -0.5,0.5], [-0.5, -0.5, -0.5],
+      [-0.5, 0.5, -0.5], [0.5, 0.5, -0.5], [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [-0.5, 0.5, 0.5], [-0.5, 0.5, -0.5]
+    ],
+    textureCoord: [
+      [0, 0], [1, 0], [1, 1], [1, 1], [0, 1], [0, 0],
+      [0, 0], [1, 0], [1, 1], [1, 1], [0, 1], [0, 0],
+      [1, 0], [1, 1], [0, 1], [0, 1], [0, 0], [1, 0],
+      [1, 0], [1, 1], [0, 1], [0, 1], [0, 0], [1, 0],
+      [0, 1], [1, 1], [1, 0], [1, 0], [0, 0], [0, 1],
+      [0, 1], [1, 1], [1, 0], [1, 0], [0, 0], [0, 1],
+    ],
+  });
 
-  function updateCamera() {
-    time++;
-    playGl.render();
-    const x = Math.sin(time / 100) * radius;
-    const z = Math.cos(time / 100) * radius;
-    mat4.lookAt(view, [x, 0, z], [0, 0, 0], [0, 1, 0]);
-    playGl.setUniform('view', view);
-    requestAnimationFrame(updateCamera);
-  }
+  mat4.perspective(perspectiveMatix, Math.PI / 6, width / height, 0.1, 100);
+  mat4.scale(model, mat4.create(), [1.1, 1.1, 1.1]);
 
-  updateCamera();
+  mat4.lookAt(view, [0, 0, 3], [0, 0, 0], [0, 1, 0]);
+  playGl.setUniform('view', view);
+  playGl.setUniform('projection', perspectiveMatix);
+  playGl.setUniform('model', model);
+  playGl.draw();
+  
+  gl.stencilMask(0xFF);
+  gl.stencilFunc(gl.ALWAYS, 0, 0xFF);
+  gl.enable(gl.DEPTH_TEST);
 })()

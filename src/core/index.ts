@@ -28,14 +28,17 @@ export default class PlayGL {
   canvas: HTMLCanvasElement;
   options: PlayGLOption;
   gl: WebGLRenderingContext;
-  meshDatas: Array<MeshData>;
-  program: PlayGlProgram;
   _max_texture_image_units: number;
+
+  get program(): PlayGlProgram {
+    const gl = this.gl;
+    return gl.getParameter(gl.CURRENT_PROGRAM);
+  }
 
   static defaultOptions = {
     preserveDrawingBuffer: true,
     depth: true,
-    stencil: false,
+    stencil: true,
     autoUpdate: false,
     vertexPositionName: 'a_vertexPosition',
     vertexTextuseCoordsName: 'a_textureCoord'
@@ -44,44 +47,59 @@ export default class PlayGL {
   constructor(canvas, options?: PlayGLOption) {
     let gl: WebGLRenderingContext;
     this.canvas = canvas;
-    this.meshDatas = [];
     this.options = Object.assign({}, PlayGL.defaultOptions, options || {});
     gl = canvas.getContext('webgl', this.options);
     this.gl = gl;
+    const {depth, stencil} = this.options;
+    if (depth) {
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthFunc(gl.LESS);
+    }
+    if (stencil) {
+      gl.enable(gl.STENCIL_TEST);
+    }
   }
 
   clear() {
-    const { gl } = this;
+    const { gl, options } = this;
     //FRAMEBUFFER_SRGB
     const {width, height} = this.canvas;
+    const {depth, stencil} = options;
+
     gl.viewport(0, 0, width, height);
     gl.clearColor(0.0, 0.0, 0.0, 0.0);
+    gl.clear(
+      gl.COLOR_BUFFER_BIT
+      | (depth ? this.gl.DEPTH_BUFFER_BIT : 0)
+      | (stencil ? this.gl.STENCIL_BUFFER_BIT : 0)
+    );
   }
 
   createProgram(fragmentCode:string = DEFAULT_FRAGMENT, vertexCode: string = DEFAULT_VERTEX) {
     const { gl } = this;
 
-    const program = createProgram(gl, vertexCode, fragmentCode);
-    this.program = program;
+    const program: PlayGlProgram = createProgram(gl, vertexCode, fragmentCode);
+    // this.program = program;
 
-    this.program._buffers = {};
-    this.program._attribute = {};
+    program._buffers = {};
+    program._attribute = {};
+    program.meshDatas = [];
 
     const pattern = new RegExp(`(?:attribute|in) vec(\\d) ${this.options.vertexPositionName}`, 'im');
     let matched = vertexCode.match(pattern);
     if(matched) {
-      this.program._dimension = Number(matched[1]);
+      program._dimension = Number(matched[1]);
     }
 
     const vTexCoord = gl.getAttribLocation(program, this.options.vertexTextuseCoordsName);
     if (vTexCoord > -1) {
-      this.program._buffers.textCoordBuffer = gl.createBuffer();
+      program._buffers.textCoordBuffer = gl.createBuffer();
     }
 
     const texCoordPattern = new RegExp(`(?:attribute|in) vec(\\d) ${this.options.vertexTextuseCoordsName}`, 'im');
     matched = vertexCode.match(texCoordPattern);
     if(matched) {
-      this.program._texCoordSize = Number(matched[1]);
+      program._texCoordSize = Number(matched[1]);
     }
 
     const attributePattern = /^\s*(?:attribute|in) (\w+?)(\d*) (\w+)/gim;
@@ -92,8 +110,8 @@ export default class PlayGL {
         const _matched = matched[i].match(patt);
         if (_matched && ![this.options.vertexPositionName, this.options.vertexTextuseCoordsName].includes(_matched[3])) {
           let [, type, size, name] = _matched;
-          this.program._buffers[name] = gl.createBuffer();
-          this.program._attribute[name] = {
+          program._buffers[name] = gl.createBuffer();
+          program._attribute[name] = {
             size: type === 'mat' ? Number(size || 1) ** 2 : Number(size || 1),
             name,
             type: type as ('mat' | 'vec')
@@ -105,14 +123,14 @@ export default class PlayGL {
     const uniformPattern = /^\s*uniform\s+(\w+)\s+(\w+)(\[\d+\])?/mg;
     matched = vertexCode.match(uniformPattern) || [];
     matched = matched.concat(fragmentCode.match(uniformPattern) || []);
-      /** 
+      /**
        * about uniform type
        * https://developer.mozilla.org/zh-CN/docs/Web/API/WebGL2RenderingContext/uniform
        * https://developer.mozilla.org/zh-CN/docs/Web/API/WebGL2RenderingContext/uniformMatrix
       **/
-    this.program._uniform = {};
-    this.program._samplerMap = {};
-    this.program._bindTextures = [];
+    program._uniform = {};
+    program._samplerMap = {};
+    program._bindTextures = [];
     matched?.forEach((m): void => {
       const _matched = m.match(/^\s*uniform\s+(\w+)\s+(\w+)(\[\d+\])?/);
       let [type, name, isVector] = _matched.splice(1);
@@ -132,7 +150,7 @@ export default class PlayGL {
             if (type.indexOf('Matrix') !== 0 && subIsVector) {
               type += 'v';
             }
-            this.program._uniform[`${structName}.${subName}`] = {
+            program._uniform[`${structName}.${subName}`] = {
               type
             }
           })
@@ -142,14 +160,14 @@ export default class PlayGL {
         if (type.indexOf('Matrix') !== 0 && isVector) {
           type += 'v';
         }
-        this.program._uniform[name] = {
+        program._uniform[name] = {
           type
         }
       }
     })
 
-    this.program._buffers.vertexBuffer = gl.createBuffer();
-    this.program._buffers.cellBuffer = gl.createBuffer();
+    program._buffers.vertexBuffer = gl.createBuffer();
+    program._buffers.cellBuffer = gl.createBuffer();
 
     return program;
   }
@@ -222,7 +240,7 @@ export default class PlayGL {
       minFilter: 'LINEAR',
       magFilter: 'LINEAR',
       ...options
-    }
+    };
     const texture = await loadImage(src);
     return this.createTexture(texture, options);
   }
@@ -235,14 +253,14 @@ export default class PlayGL {
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
-    // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+    // gl.generateMipmap(gl.TEXTURE_2D);
 
     if (img) {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
     }
 
-    // TODO 将其修改为可配置的选项
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, this.gl[options.wrapS]);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, this.gl[options.wrapT]);
 
@@ -255,12 +273,6 @@ export default class PlayGL {
   
   use(program: PlayGlProgram) {
     const { gl, options } = this;
-    const {depth} = options;
-    
-    if (depth) {
-      gl.enable(gl.DEPTH_TEST);
-      gl.depthFunc(gl.LESS);
-    }
     
     gl.useProgram(program);
     
@@ -331,13 +343,14 @@ export default class PlayGL {
         data: pointsToBuffer(textureCoord || [], Float32Array)
       };
     }
-    this.meshDatas.push(meshData);
+    this.program.meshDatas.push(meshData);
   }
 
   _draw() {
     const {gl, program} = this;
-    this.meshDatas.forEach(meshData => {
-      const {position, cells, cellCount, attributes, textureCoord } = meshData;
+
+    this.program.meshDatas.forEach(meshData => {
+      const {position, cells, cellCount, attributes, textureCoord, uniforms } = meshData;
 
       gl.bindBuffer(gl.ARRAY_BUFFER, program._buffers.vertexBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, position, gl.STATIC_DRAW);
@@ -347,6 +360,12 @@ export default class PlayGL {
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, cells, gl.STATIC_DRAW);
       }
 
+      if(uniforms) {
+        Object.entries(uniforms).forEach(([key, value]) => {
+          this.setUniform(key, value);
+        });
+      }
+      
       if (attributes) {
         Object.entries(attributes).forEach(([key, value]) => {
           const {data, name} = value;
@@ -373,17 +392,11 @@ export default class PlayGL {
   }
 
   render(noClear?: boolean) {
-    const {gl, options} = this;
-    const { depth, stencil } = options;
 
-    this.clear();
     if (!noClear) {
-      gl.clear(
-        gl.COLOR_BUFFER_BIT
-        | (depth ? this.gl.DEPTH_BUFFER_BIT : 0)
-        | (stencil ? this.gl.STENCIL_BUFFER_BIT : 0)
-      );
+      this.clear();
     }
+
     this._draw();
   }
 }
