@@ -29,6 +29,8 @@ interface createMeshDataParam {
   attributes?: Record<string, Array<number[]>>;
   uniforms?: Record<string, any>; // TODO 后续修改相关的配置
   textureCoord?: Array<number[]>
+  useBlend?: boolean;
+  useCullFace?: boolean;
 }
 
 interface MeshData {
@@ -45,6 +47,9 @@ interface MeshData {
     data: Float32Array;
     size: number;
   };
+  useBlend?: boolean;
+  useCullFace?: boolean;
+  setMeshUniform?: (name: string, value) => void;
 }
 
 interface TextureParams {

@@ -34,14 +34,19 @@ play.gl属于自己无聊做的一个webgl的基础图形学的库，用来学�
 
 addMeshData和setUniform设置可通用到多个program
 
-修改meshDatas的函数防止多次重复渲染
+☑️修改meshDatas的函数防止多次重复渲染
 
-支持图片和颜色混合
+☑️支持图片和颜色混合(gl.blend)
 
-面剔除
+☑️面剔除
+
+支持帧缓存
+
+立方体贴图
 
 抗锯齿
 
+支持模型加载
 
 ### 开发中遇到的迷惑问题
 
@@ -50,3 +55,5 @@ addMeshData和setUniform设置可通用到多个program
 欧拉角的万向节死锁
 
 根据在场景中添加的光源值去计算GLSL中的值
+
+面剔除的问题中，修改view视角，重新进行渲染和剔除

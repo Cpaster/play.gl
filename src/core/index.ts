@@ -50,6 +50,7 @@ export default class PlayGL {
     this.options = Object.assign({}, PlayGL.defaultOptions, options || {});
     gl = canvas.getContext('webgl', this.options);
     this.gl = gl;
+
     const {depth, stencil} = this.options;
     if (depth) {
       gl.enable(gl.DEPTH_TEST);
@@ -58,6 +59,11 @@ export default class PlayGL {
     if (stencil) {
       gl.enable(gl.STENCIL_TEST);
     }
+    // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    // 面剔除
+    gl.frontFace(gl.CCW);
+    gl.cullFace(gl.BACK);
   }
 
   clear() {
@@ -300,14 +306,17 @@ export default class PlayGL {
   }
 
   addMeshData(data: createMeshDataParam) {
+    const {program} = this;
     const meshData: MeshData = {};
     if (!data) {
       throw new Error('mesh data should`t empty');
     }
-    const {positions, cells, uniforms, attributes, textureCoord } = data;
+    const {positions, cells, uniforms, attributes, textureCoord, useBlend, useCullFace } = data;
     const positionFloatArray = pointsToBuffer(positions, Float32Array);
     
     meshData.position = positionFloatArray;
+    meshData.useBlend = useBlend || false;
+    meshData.useCullFace = useCullFace || false;
     
     if (uniforms) {
       meshData.uniforms = uniforms; // TODO修改其最终的样式
@@ -343,15 +352,36 @@ export default class PlayGL {
         data: pointsToBuffer(textureCoord || [], Float32Array)
       };
     }
+
+    meshData.setMeshUniform = (name: string, val) => {
+      Object.entries(program._uniform).forEach(([key]) => {
+        if (name === key || new RegExp(`^${key}$`).test(name)) {
+          meshData.uniforms[name] = val;
+        } else {
+          console.warn(`${name} isn't vaild`);
+        }
+      })
+    };
+
     this.program.meshDatas.push(meshData);
+    return meshData;
   }
 
   _draw() {
     const {gl, program} = this;
 
     this.program.meshDatas.forEach(meshData => {
-      const {position, cells, cellCount, attributes, textureCoord, uniforms } = meshData;
-
+      const {position, cells, cellCount, attributes, textureCoord, uniforms, useBlend, useCullFace } = meshData;
+      if (useBlend) {
+        gl.enable(gl.BLEND);
+      } else {
+        gl.disable(gl.BLEND);
+      }
+      if (useCullFace) {
+        gl.enable(gl.CULL_FACE);
+      } else {
+        gl.disable(gl.CULL_FACE);
+      }
       gl.bindBuffer(gl.ARRAY_BUFFER, program._buffers.vertexBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, position, gl.STATIC_DRAW);
 
