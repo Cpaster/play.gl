@@ -282,7 +282,7 @@ export default class PlayGL {
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     }
 
-    gl.generateMipmap(gl.TEXTURE_2D);
+    // gl.generateMipmap(gl.TEXTURE_2D);
 
     if (isCubeTexture) {
       for (let i = 0; i < img?.length; i++) {

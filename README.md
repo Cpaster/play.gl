@@ -44,7 +44,7 @@ addMeshData和setUniform设置可通用到多个program
 
 ☑️立方体贴图
 
-折射和反射
+☑️折射和反射
 
 实例化
 

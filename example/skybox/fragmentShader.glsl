@@ -2,12 +2,17 @@
 precision mediump float;
 #endif
 
-uniform sampler2D texture1;
+uniform samplerCube skybox;
+uniform vec3 cameraPos;
 
-uniform vec4 color;
-
-varying vec2 vTextureCoord;
+// varying vec2 vTextureCoord;
+varying vec3 normal;
+varying vec3 FragPos;
 
 void main() {
-  gl_FragColor = texture2D(texture1, vTextureCoord);
+  float rotio = 1.0 / 1.52;
+  vec3 I = normalize(FragPos - cameraPos);
+  // vec3 R = reflect(I, normalize(normal));
+  vec3 R = refract(I, normalize(normal), rotio);
+  gl_FragColor = vec4(textureCube(skybox, R).rgb, 1.0);
 }

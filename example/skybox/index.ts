@@ -47,21 +47,11 @@ const canvas = document.getElementById('page');
     isFlipY: false
   });
 
-  // playGl.setUniform('view', view);
   playGl.setUniform('projection', perspectiveMatix);
   playGl.setUniform('skybox', cubeTextures);
-  // playGl.draw();
 
   playGl.use(program);
-  const model = [];
-  mat4.translate(model, mat4.create(), [5, 0, 0]);
   playGl.setUniform('projection', perspectiveMatix);
-  playGl.setUniform('model', model);
-
-  const wallTexture = await playGl.loadTexture('./example/skybox/img/wall.jpg', {
-    wrapS: 'REPEAT',
-    wrapT: 'REPEAT'
-  });
 
   // // box
   playGl.addMeshData({
@@ -73,39 +63,48 @@ const canvas = document.getElementById('page');
       [-0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, -0.5, 0.5], [0.5, -0.5, 0.5], [-0.5, -0.5,0.5], [-0.5, -0.5, -0.5],
       [-0.5, 0.5, -0.5], [0.5, 0.5, -0.5], [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [-0.5, 0.5, 0.5], [-0.5, 0.5, -0.5]
     ],
-    textureCoord: [
-      [0, 0], [1, 0], [1, 1], [1, 1], [0, 1], [0, 0],
-      [0, 0], [1, 0], [1, 1], [1, 1], [0, 1], [0, 0],
-      [1, 0], [1, 1], [0, 1], [0, 1], [0, 0], [1, 0],
-      [1, 0], [1, 1], [0, 1], [0, 1], [0, 0], [1, 0],
-      [0, 1], [1, 1], [1, 0], [1, 0], [0, 0], [0, 1],
-      [0, 1], [1, 1], [1, 0], [1, 0], [0, 0], [0, 1],
-    ],
+    attributes: {
+      aNormal: [
+        [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1],
+        [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1],
+        [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0],
+        [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],
+        [0, -1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0],
+        [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0]
+      ]
+    },
     uniforms: {
-      texture1: wallTexture
+      skybox: cubeTextures
     },
   });
-  // playGl.draw();
 
   let time = 0;
-  const radius = 10;
+  const radius = 2;
   const {gl} = playGl;
   function updateCamera() {
     time++;
     const view = [];
     playGl.clear();
-    const x = Math.sin(time / 100) * radius;
+    // const x = Math.sin(time / 100) * radius;
     const z = Math.cos(time / 100) * radius;
-    const y = Math.sin(time / 100) * radius;
-    mat4.lookAt(view, [0, 0, 0.5], [x, y, z], [0, 1, 0]);
+    // const y = Math.sin(time / 100) * radius;
+    const cameraPos = [3, 0, 0];
+    mat4.lookAt(view, cameraPos, [0, 0, 0], [0, 1, 0]);
+
     playGl.use(program);
     playGl.setUniform('view', view);
-    mat4.translate(model, mat4.create(), [x, y, 0]);
-    playGl.setUniform('model', model);
+    const translate = mat4.translate([], mat4.create(), [0, z, 0]);
+    playGl.setUniform('cameraPos', cameraPos);
+    playGl.setUniform('model', translate);
+    // console.log(mat4.transpose([], mat4.invert([], translate)));
+    playGl.setUniform('normalModel', mat4.transpose([], mat4.invert([], translate)));
     playGl.draw();
+    
     gl.depthFunc(gl.LEQUAL);
     playGl.use(program2);
-    playGl.setUniform('view', view);
+    const a = mat4.fromMat4([], view);
+    const b = mat4.toMat4([], a);
+    playGl.setUniform('view', b);
     playGl.draw();
     gl.depthFunc(gl.LESS);
     requestAnimationFrame(updateCamera);
