@@ -3,6 +3,8 @@ import * as mat4 from '../../src/math/mat4';
 
 import vertexShader from './vertexShader.glsl';
 import framentShader from './fragmentShader.glsl';
+import framentFrameShader from './fragmentFrameShader.glsl';
+import vertexFrameShader from './vertexFrameShader.glsl';
 
 const canvas = document.getElementById('page');
 
@@ -12,6 +14,7 @@ const canvas = document.getElementById('page');
   playGl.clear();
 
   const program = playGl.createProgram(framentShader, vertexShader);
+  const program2 = playGl.createProgram(framentFrameShader, vertexFrameShader);
 
   playGl.use(program);
 
@@ -52,10 +55,6 @@ const canvas = document.getElementById('page');
     }
   });
 
-  playGl.draw();
-
-  // box
-  // playGl.setUniform('texture1', wallTexture);
   playGl.addMeshData({
     positions: [
       [-0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, 0.5, -0.5], [0.5, 0.5, -0.5], [-0.5, 0.5,-0.5], [-0.5, -0.5, -0.5],
@@ -77,21 +76,44 @@ const canvas = document.getElementById('page');
       texture1: wallTexture
     }
   });
+  const fbo = playGl.createFrameBuffer();
+  console.log(fbo);
+  console.log(program2);
+  playGl.bindFBO(fbo);
+  playGl.render();
+  playGl.setDefaultFBO();
 
+  playGl.use(program2);
+
+  playGl.addMeshData({
+    positions: [[0.5, 0.5, 0], [0.5, -0.5, 0], [-0.5, -0.5, 0], [-0.5, 0.5, 0]],
+    textureCoord: [[1, 1], [1, 0], [0, 0], [0, 1]],
+    cells: [[0, 1, 2], [2, 3, 0]],
+    uniforms: {
+      screenTexture: fbo.texture
+    }
+    // attributes: {
+    //   color: [[1, 0, 0, 1], [0, 1, 0, 1], [0, 0, 1, 1]]
+    // }
+  })
   playGl.draw();
 
-  let time = 0;
-  const radius = 4;
+  // playGl.setDefaultFBO();
+  // playGl.render();
+  // console.log(fbo.toString());
 
-  function updateCamera() {
-    time++;
-    playGl.render();
-    const x = Math.sin(time / 100) * radius;
-    const z = Math.cos(time / 100) * radius;
-    mat4.lookAt(view, [x, 0, z], [0, 0, 0], [0, 1, 0]);
-    playGl.setUniform('view', view);
-    requestAnimationFrame(updateCamera);
-  }
+  // let time = 0;
+  // const radius = 4;
 
-  updateCamera();
+  // function updateCamera() {
+  //   time++;
+  //   playGl.render();
+  //   const x = Math.sin(time / 100) * radius;
+  //   const z = Math.cos(time / 100) * radius;
+  //   mat4.lookAt(view, [x, 0, z], [0, 0, 0], [0, 1, 0]);
+  //   playGl.setUniform('view', view);
+  //   // requestAnimationFrame(updateCamera);
+  // }
+
+  // updateCamera();
 })()

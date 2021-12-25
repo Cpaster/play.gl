@@ -29,6 +29,7 @@ export default class PlayGL {
   options: PlayGLOption;
   gl: WebGLRenderingContext;
   _max_texture_image_units: number;
+  frameBuffer: PlayGLFrameBuffer;
 
   get program(): PlayGlProgram {
     const gl = this.gl;
@@ -70,6 +71,8 @@ export default class PlayGL {
     const { gl, options } = this;
     //FRAMEBUFFER_SRGB
     const {width, height} = this.canvas;
+    console.log(width);
+    console.log(height);
     const {depth, stencil} = options;
 
     gl.viewport(0, 0, width, height);
@@ -367,6 +370,48 @@ export default class PlayGL {
     return meshData;
   }
 
+  createFrameBuffer() {
+    const {gl, options, canvas} = this;
+    const {depth, stencil} = options;
+    const {width, height} = canvas;
+    const frameBuffer: PlayGLFrameBuffer = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+
+    const textureBuffer = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, textureBuffer);
+    
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,  gl.TEXTURE_2D, textureBuffer, 0);
+    frameBuffer.texture = textureBuffer;
+    
+    if (depth && stencil) {
+      const rbo = gl.createRenderbuffer();
+      gl.bindRenderbuffer(gl.RENDERBUFFER, rbo);
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, width, height);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, rbo);
+    }
+
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+      console.error('framebuffer create fail');
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return frameBuffer;
+  }
+
+  bindFBO(frameBuffer) {
+    this.frameBuffer = frameBuffer;
+  }
+
+  setDefaultFBO() {
+    const { gl } = this;
+    this.frameBuffer = null;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  }
+
   _draw() {
     const {gl, program} = this;
 
@@ -422,11 +467,19 @@ export default class PlayGL {
   }
 
   render(noClear?: boolean) {
+    const {gl} = this;
+    if (this.frameBuffer) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
+    }
 
     if (!noClear) {
       this.clear();
     }
 
     this._draw();
+
+    if (this.frameBuffer) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
   }
 }

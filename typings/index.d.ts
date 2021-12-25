@@ -58,3 +58,7 @@ interface TextureParams {
   minFilter?: 'NEAREST' | 'LINEAR' | 'LINEAR_MIPMAP_LINEAR' | 'NEAREST_MIPMAP_NEAREST' | 'LINEAR_MIPMAP_NEAREST' | 'NEAREST_MIPMAP_LINEAR';
   magFilter?: 'NEAREST' | 'LINEAR' | 'LINEAR_MIPMAP_LINEAR' | 'NEAREST_MIPMAP_NEAREST' | 'LINEAR_MIPMAP_NEAREST' | 'NEAREST_MIPMAP_LINEAR';
 }
+
+interface PlayGLFrameBuffer extends WebGLFramebuffer {
+  texture?: WebGLTexture;
+}
