@@ -42,7 +42,9 @@ addMeshData和setUniform设置可通用到多个program
 
 ☑️支持帧缓存
 
-立方体贴图
+☑️立方体贴图
+
+折射和反射
 
 实例化
 
@@ -53,8 +55,6 @@ addMeshData和setUniform设置可通用到多个program
 法线贴图
 
 视差贴图
-
-
 
 支持模型加载
 

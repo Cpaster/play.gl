@@ -6,7 +6,7 @@ module.exports = {
   // entry: './example/blend/index.ts',
   // entry: './demo/texture/index.ts',
   // entry: './demo/light/index.ts',
-  entry: './example/depthTestDemo/index.ts',
+  entry: './example/skybox/index.ts',
   module: {
     rules: [{
       test: /\.glsl$/,

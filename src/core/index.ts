@@ -71,8 +71,6 @@ export default class PlayGL {
     const { gl, options } = this;
     //FRAMEBUFFER_SRGB
     const {width, height} = this.canvas;
-    console.log(width);
-    console.log(height);
     const {depth, stencil} = options;
 
     gl.viewport(0, 0, width, height);
@@ -187,10 +185,11 @@ export default class PlayGL {
     const uniformLocation = gl.getUniformLocation(program, name);
 
     if (/^sampler/.test(type)) {
+      const targetType = type === 'samplerCube' ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D;
       const idx = program._samplerMap[name] ? program._samplerMap[name] : program._bindTextures?.length;
       program._bindTextures[idx] = v;
       gl.activeTexture(gl.TEXTURE0 + idx);
-      gl.bindTexture(gl.TEXTURE_2D, v);
+      gl.bindTexture(targetType, v);
       if (!program._samplerMap[name]) {
         program._samplerMap[name] = idx;
         gl.uniform1i(uniformLocation, idx);
@@ -242,40 +241,67 @@ export default class PlayGL {
     return this.program._uniform[name].value || '';
   }
 
-  async loadTexture(src: string, options?:TextureParams) {
-    options = {
-      wrapS: 'CLAMP_TO_EDGE',
-      wrapT: 'CLAMP_TO_EDGE',
-      minFilter: 'LINEAR',
-      magFilter: 'LINEAR',
-      ...options
-    };
-    const texture = await loadImage(src);
-    return this.createTexture(texture, options);
+  async loadTexture(src: string | string[], options?:TextureParams) {
+    const {gl} = this;
+    if (src) {
+      options = {
+        wrapS: 'CLAMP_TO_EDGE',
+        wrapT: 'CLAMP_TO_EDGE',
+        minFilter: 'LINEAR',
+        magFilter: 'LINEAR',
+        ...options
+      };
+      const textures = await Promise.all(
+        (typeof src === 'string' ? [src] : src)?.map((s: string) => {
+          return loadImage(s, options.isFlipY)
+        })
+      );
+
+      if (textures.length) {
+        const textureType = textures.length > 1 ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D;
+        return this.createTexture(
+          textureType,
+          textures,
+          options
+        );
+      }
+    }
+    return null;
   }
 
-  createTexture(img, options: TextureParams) {
+  createTexture(textureType, img, options: TextureParams) {
     const {gl} = this;
+    const isCubeTexture = textureType === gl.TEXTURE_CUBE_MAP;
     this._max_texture_image_units = gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
     gl.activeTexture(gl.TEXTURE0 + this._max_texture_image_units - 1);
 
     const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.bindTexture(textureType, texture);
 
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-
-    // gl.generateMipmap(gl.TEXTURE_2D);
-
-    if (img) {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+    if (options.isFlipY !== false) {
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     }
 
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, this.gl[options.wrapS]);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, this.gl[options.wrapT]);
+    gl.generateMipmap(gl.TEXTURE_2D);
 
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this.gl[options.minFilter]);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this.gl[options.magFilter]);
-    gl.bindTexture(gl.TEXTURE_2D, null);
+    if (isCubeTexture) {
+      for (let i = 0; i < img?.length; i++) {
+        gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img[i]);
+      }
+    } else {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img[0]);
+    }
+
+    // if (isCubeTexture) {
+    //   gl.texParameteri(textureType, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+    // }
+
+    gl.texParameteri(textureType, gl.TEXTURE_WRAP_S, this.gl[options.wrapS]);
+    gl.texParameteri(textureType, gl.TEXTURE_WRAP_T, this.gl[options.wrapT]);
+
+    gl.texParameteri(textureType, gl.TEXTURE_MIN_FILTER, this.gl[options.minFilter]);
+    gl.texParameteri(textureType, gl.TEXTURE_MAG_FILTER, this.gl[options.magFilter]);
+    gl.bindTexture(textureType, null);
 
     return texture;
   }

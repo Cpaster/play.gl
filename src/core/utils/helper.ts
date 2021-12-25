@@ -52,7 +52,7 @@ export const createProgram = (gl: WebGLRenderingContext, vertexCode: string, fra
 }
 
 const imagesCache = {};
-export const loadImage = (src: string) => {
+export const loadImage = (src: string, isFlipY?: boolean) => {
   if (!imagesCache[src]) {
     const img = new Image();
     if(typeof src === 'string'
@@ -63,7 +63,8 @@ export const loadImage = (src: string) => {
     imagesCache[src] = new Promise((resolve) => {
       img.onload = () => {
         if (typeof createImageBitmap === 'function') {
-          createImageBitmap(img, { imageOrientation: 'flipY' }).then((bitmap) => {
+          const option: any = isFlipY === false ? {} : { imageOrientation: 'flipY' };
+          createImageBitmap(img, option).then((bitmap) => {
             imagesCache[src] = bitmap;
             resolve(bitmap);
           })
