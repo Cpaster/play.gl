@@ -10,7 +10,9 @@ const canvas = document.getElementById('page');
 
 (async function() {
 
-  const playGl = new PlayGL(canvas);
+  const playGl = new PlayGL(canvas, {
+    isWebGL2: true
+  });
 
   playGl.clear();
 
@@ -18,6 +20,10 @@ const canvas = document.getElementById('page');
   const program2 = playGl.createProgram(fragmentSkyBoxShader, vertexSkyBoxShader);
 
   const { width, height } = canvas.getBoundingClientRect();
+
+  playGl.createBlockUniform();
+
+  // playGl.setGlobalUniform();
 
   const perspectiveMatix = [];
 
@@ -47,11 +53,11 @@ const canvas = document.getElementById('page');
     isFlipY: false
   });
 
-  playGl.setUniform('projection', perspectiveMatix);
+  // playGl.setUniform('projection', perspectiveMatix);
   playGl.setUniform('skybox', cubeTextures);
 
   playGl.use(program);
-  playGl.setUniform('projection', perspectiveMatix);
+  // playGl.setUniform('projection', perspectiveMatix);
 
   // // box
   playGl.addMeshData({
@@ -79,24 +85,30 @@ const canvas = document.getElementById('page');
   });
 
   let time = 0;
-  const radius = 2;
+  const radius = 5;
   const {gl} = playGl;
+  playGl.setBlockUniformValue('Matrices', {
+    projection: perspectiveMatix,
+    test: [1.0]
+  });
   function updateCamera() {
     time++;
     const view = [];
     playGl.clear();
-    // const x = Math.sin(time / 100) * radius;
+    const x = Math.sin(time / 100) * radius;
     const z = Math.cos(time / 100) * radius;
-    // const y = Math.sin(time / 100) * radius;
-    const cameraPos = [3, 0, 0];
+    const y = Math.sin(time / 100) * radius;
+    const cameraPos = [x, y, z];
     mat4.lookAt(view, cameraPos, [0, 0, 0], [0, 1, 0]);
-
+    // playGl.setBlockUniformValue('Matrices', {
+    //   test: [z]
+    // });
     playGl.use(program);
     playGl.setUniform('view', view);
-    const translate = mat4.translate([], mat4.create(), [0, z, 0]);
+    const translate = mat4.translate([], mat4.create(), [0, 0, 0]);
     playGl.setUniform('cameraPos', cameraPos);
     playGl.setUniform('model', translate);
-    // console.log(mat4.transpose([], mat4.invert([], translate)));
+
     playGl.setUniform('normalModel', mat4.transpose([], mat4.invert([], translate)));
     playGl.draw();
     
@@ -110,24 +122,4 @@ const canvas = document.getElementById('page');
     requestAnimationFrame(updateCamera);
   }
   updateCamera();
-
-  // playGl.setUniform('skybox');
-  // playGl.draw();
-
-  // let time = 0;
-  // const radius = 4;
-
-  // function updateCamera() {
-  //   time++;
-  //   playGl.clear();
-  //   const view = [];
-  //   const x = Math.sin(time / 100) * radius;
-  //   const z = Math.cos(time / 100) * radius;
-  //   mat4.lookAt(view, [x, 0, z], [0, 0, 0], [0, 1, 0]);
-  //   playGl.setUniform('view', view);
-  //   playGl.draw();
-  //   requestAnimationFrame(updateCamera);
-  // }
-
-  // updateCamera();
 })()

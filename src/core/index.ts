@@ -1,4 +1,4 @@
-import { pointsToBuffer, createProgram, loadImage } from './utils/helper';
+import { pointsToBuffer, createProgram, loadImage, arrayToBuffer } from './utils/helper';
 import DEFAULT_VERTEX from './defaultVertexShader.glsl';
 import DEFAULT_FRAGMENT from './defaultFragmentShader.glsl';
 
@@ -27,9 +27,24 @@ const uniformTypeMap = {
 export default class PlayGL {
   canvas: HTMLCanvasElement;
   options: PlayGLOption;
-  gl: WebGLRenderingContext;
+  gl: WebGLRenderingContext | WebGL2RenderingContext;
   _max_texture_image_units: number;
   frameBuffer: PlayGLFrameBuffer;
+  programs: PlayGlProgram[] = [];
+  blockUniforms: Record<
+    string,
+    {
+      buffer: WebGLBuffer;
+      index?: number;
+      programs: WebGLProgram[];
+      bufferSize?: number;
+      blockId: number;
+      elm?: Record<string, {
+        offset: number;
+        baseSize: number;
+      }>
+    }
+  > = {};
 
   get program(): PlayGlProgram {
     const gl = this.gl;
@@ -46,10 +61,14 @@ export default class PlayGL {
   };
   
   constructor(canvas, options?: PlayGLOption) {
-    let gl: WebGLRenderingContext;
+    let gl: WebGLRenderingContext | WebGL2RenderingContext;
     this.canvas = canvas;
     this.options = Object.assign({}, PlayGL.defaultOptions, options || {});
-    gl = canvas.getContext('webgl', this.options);
+    if (this.options.isWebGL2) {
+      gl = canvas.getContext('webgl2', this.options);
+    } else {
+      gl = canvas.getContext('webgl', this.options);
+    }
     this.gl = gl;
 
     const {depth, stencil} = this.options;
@@ -126,7 +145,7 @@ export default class PlayGL {
         }
       }
     }
-
+    
     const uniformPattern = /^\s*uniform\s+(\w+)\s+(\w+)(\[\d+\])?/mg;
     matched = vertexCode.match(uniformPattern) || [];
     matched = matched.concat(fragmentCode.match(uniformPattern) || []);
@@ -171,12 +190,113 @@ export default class PlayGL {
           type
         }
       }
-    })
+    });
+
+
+    const uniformBlockPattern = /^layout\s*\(std140\)\s*uniform\s+(\w+)\s*\n*\s*{\s*\n*\s*((((\w)\s*\[*\]*)+);\s*\n*\s*)+\s*\n*\s*}/mg;
+    matched = vertexCode.match(uniformBlockPattern);
+
+    if (this.options.isWebGL2) {
+      let gl = this.gl as WebGL2RenderingContext;
+      matched?.forEach(m => {
+        const _matchedName = m.match(/\s*uniform\s+(\w+)/);
+        const uniformName = _matchedName && _matchedName[1];
+        if (!this.blockUniforms[uniformName]) {
+          const blockUniformBuffer = gl.createBuffer();
+          const uniformBlockId = gl.getUniformBlockIndex(program, uniformName);
+          this.blockUniforms[uniformName] = {
+            buffer: blockUniformBuffer,
+            programs: [program],
+            blockId: uniformBlockId
+          };
+          const numUniforms = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+          const indices = [...Array(numUniforms).keys()];
+          const blockIndices = gl.getActiveUniforms(program, indices, gl.UNIFORM_BLOCK_INDEX);
+          const offsets = gl.getActiveUniforms(program, indices, gl.UNIFORM_OFFSET);
+          const blockElms = {};
+          let maxBufferLen = 0;
+          for (let ii = 0; ii < numUniforms; ++ii) {
+            const uniformInfo = gl.getActiveUniform(program, ii);
+            if (uniformInfo?.name.startsWith("gl_") || uniformInfo?.name.startsWith("webgl_")) {
+                continue;
+            }
+            const {name, type} = uniformInfo;
+            const blockIndex = blockIndices[ii];
+            const offset = offsets[ii];
+            if (offset >= 0 && blockIndex === uniformBlockId) {
+              maxBufferLen = Math.max(maxBufferLen, offset);
+              blockElms[name] = {
+                type,
+                offset,
+              }
+            }
+          }
+          this.blockUniforms[uniformName].elm = blockElms;
+          this.blockUniforms[uniformName].bufferSize = maxBufferLen + 64;
+        } else {
+          // TODO
+          this.blockUniforms[uniformName].programs.push(program);
+        }
+      });
+    }
 
     program._buffers.vertexBuffer = gl.createBuffer();
     program._buffers.cellBuffer = gl.createBuffer();
 
+    this.programs.push(program);
     return program;
+  }
+
+  createBlockUniform() {
+    const {options, blockUniforms } = this;
+    const {isWebGL2} = options;
+    if (!isWebGL2) {
+      console.warn('not webgl2 context, so can`t use this function');
+      return;
+    }
+    const gl = this.gl as WebGL2RenderingContext;
+
+    Object.entries(blockUniforms).forEach(([key, value], index) => {
+      const {buffer, bufferSize, programs, blockId} = value;
+      programs.forEach((program) => {
+        // const uniformBlockId = gl.getUniformBlockIndex(program, key);
+        gl.uniformBlockBinding(program, blockId, index);
+      });
+
+      gl.bindBuffer(gl.UNIFORM_BUFFER, buffer);
+      gl.bufferData(gl.UNIFORM_BUFFER, bufferSize * 4, gl.STATIC_DRAW);
+
+      gl.bindBufferRange(gl.UNIFORM_BUFFER, index, buffer, 0, bufferSize * 4);
+      blockUniforms[key].index = index;
+    });
+  }
+
+  setBlockUniformValue(name: string, uniforms: Record<string, any>) {
+    const {blockUniforms, options} = this;
+    const blockUniform = blockUniforms[name];
+    const {isWebGL2} = options;
+    if (!isWebGL2) {
+      console.warn('not webgl2 context, so can`t use this function');
+      return;
+    }
+    
+    const gl = this.gl as WebGL2RenderingContext;
+
+    if (blockUniform) {
+      const {elm, buffer} = blockUniform;
+      gl.bindBuffer(gl.UNIFORM_BUFFER, buffer);
+      Object.entries(uniforms).forEach(([key, value]) => {
+        const elmVal = elm[key];
+        if (elmVal) {
+          const { offset } = elmVal;
+          console.log(offset);
+          gl.bufferSubData(gl.UNIFORM_BUFFER, offset, arrayToBuffer(value));
+        }
+      });
+      gl.bindBuffer(gl.UNIFORM_BUFFER, null);
+    } else {
+      console.warn(`${name} isn\`t exist`);
+    }
   }
 
   _setUniform(name, type, v) {
@@ -207,9 +327,6 @@ export default class PlayGL {
         setUniform(uniformLocation, value);
       } else {
         setUniform(uniformLocation, ...value);
-      }
-      if (uniformInfo) {
-        
       }
       uniformInfo ? (uniformInfo.value = value) : 
       (program._uniform[name] = {

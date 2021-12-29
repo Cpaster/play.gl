@@ -1,6 +1,7 @@
 declare module "*.glsl";
 
 interface PlayGLOption extends WebGLContextAttributes {
+  isWebGL2?: boolean;
   depth?: boolean;
   stencil?: boolean;
   vertexPositionName?: string;

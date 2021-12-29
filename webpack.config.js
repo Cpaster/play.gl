@@ -7,6 +7,7 @@ module.exports = {
   // entry: './demo/texture/index.ts',
   // entry: './demo/light/index.ts',
   entry: './example/skybox/index.ts',
+  // entry: './example/blockUniform/index.ts',
   module: {
     rules: [{
       test: /\.glsl$/,

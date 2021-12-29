@@ -32,7 +32,7 @@ play.gl属于自己无聊做的一个webgl的基础图形学的库，用来学�
 
 ☑️可以自定义深度测试和模版测试的开关
 
-addMeshData和setUniform设置可通用到多个program
+☑️addMeshData和setUniform设置可通用到多个program（使用uniform的缓冲对象实现）
 
 ☑️修改meshDatas的函数防止多次重复渲染
 

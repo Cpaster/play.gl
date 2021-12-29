@@ -18,6 +18,17 @@ export const pointsToBuffer = (points: Array<Array<number>>, Type) => {
   return buffer;
 }
 
+export const arrayToBuffer = (arr: Array<number>, Type = Float32Array) => {
+  if (!arr?.length) {
+    throw new Error('points is empty');
+  }
+  const buffer = new Type(arr.length);
+  arr.forEach((i, index) => {
+    buffer[index] = i;
+  })
+  return buffer;
+}
+
 export const createProgram = (gl: WebGLRenderingContext, vertexCode: string, fragmentCode: string): WebGLProgram => {
   const vertexShader = gl.createShader(gl.VERTEX_SHADER);
   gl.shaderSource(vertexShader, vertexCode);
