@@ -28,7 +28,7 @@ const canvas = document.getElementById('page');
 
   function isBuiltIn(info) {
     const name = info.name;
-    return info.name.startsWith("gl_") || info.name.startsWith("webgl_");
+    return name.startsWith("gl_") || name.startsWith("webgl_");
   }
 
   function glEnumToString(gl, value) {

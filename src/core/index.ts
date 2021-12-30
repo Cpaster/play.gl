@@ -36,9 +36,11 @@ export default class PlayGL {
     {
       buffer: WebGLBuffer;
       index?: number;
-      programs: WebGLProgram[];
+      programs: Array<{
+        program: WebGLProgram;
+        uniformBlockId: number
+      }>;
       bufferSize?: number;
-      blockId: number;
       elm?: Record<string, {
         offset: number;
         baseSize: number;
@@ -201,13 +203,15 @@ export default class PlayGL {
       matched?.forEach(m => {
         const _matchedName = m.match(/\s*uniform\s+(\w+)/);
         const uniformName = _matchedName && _matchedName[1];
+        const uniformBlockId = gl.getUniformBlockIndex(program, uniformName);
         if (!this.blockUniforms[uniformName]) {
           const blockUniformBuffer = gl.createBuffer();
-          const uniformBlockId = gl.getUniformBlockIndex(program, uniformName);
           this.blockUniforms[uniformName] = {
             buffer: blockUniformBuffer,
-            programs: [program],
-            blockId: uniformBlockId
+            programs: [{
+              program,
+              uniformBlockId
+            }]
           };
           const numUniforms = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
           const indices = [...Array(numUniforms).keys()];
@@ -235,7 +239,10 @@ export default class PlayGL {
           this.blockUniforms[uniformName].bufferSize = maxBufferLen + 64;
         } else {
           // TODO
-          this.blockUniforms[uniformName].programs.push(program);
+          this.blockUniforms[uniformName].programs.push({
+            program,
+            uniformBlockId
+          });
         }
       });
     }
@@ -257,10 +264,10 @@ export default class PlayGL {
     const gl = this.gl as WebGL2RenderingContext;
 
     Object.entries(blockUniforms).forEach(([key, value], index) => {
-      const {buffer, bufferSize, programs, blockId} = value;
-      programs.forEach((program) => {
-        // const uniformBlockId = gl.getUniformBlockIndex(program, key);
-        gl.uniformBlockBinding(program, blockId, index);
+      const {buffer, bufferSize, programs } = value;
+      programs.forEach((p) => {
+        const {program, uniformBlockId} = p;
+        gl.uniformBlockBinding(program, uniformBlockId, index);
       });
 
       gl.bindBuffer(gl.UNIFORM_BUFFER, buffer);
@@ -289,7 +296,6 @@ export default class PlayGL {
         const elmVal = elm[key];
         if (elmVal) {
           const { offset } = elmVal;
-          console.log(offset);
           gl.bufferSubData(gl.UNIFORM_BUFFER, offset, arrayToBuffer(value));
         }
       });
