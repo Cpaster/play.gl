@@ -6,7 +6,7 @@ module.exports = {
   // entry: './example/blend/index.ts',
   // entry: './demo/texture/index.ts',
   // entry: './demo/light/index.ts',
-  entry: './example/skybox/index.ts',
+  entry: './example/instancingQuads/index.ts',
   // entry: './example/blockUniform/index.ts',
   module: {
     rules: [{

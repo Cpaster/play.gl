@@ -26,8 +26,12 @@ interface PlayGlProgram extends WebGLProgram {
 
 interface createMeshDataParam {
   positions: Array<Array<number>>;
+  instanceCount?: number;
   cells?: Array<Array<number>>;
-  attributes?: Record<string, Array<number[]>>;
+  attributes?: Record<string, {
+    data: Array<number[]>;
+    divisor?: 0 | 1 | 2;
+  }>;
   uniforms?: Record<string, any>; // TODO 后续修改相关的配置
   textureCoord?: Array<number[]>
   useBlend?: boolean;
@@ -35,6 +39,7 @@ interface createMeshDataParam {
 }
 
 interface MeshData {
+  instanceCount?: number;
   position?: Float32Array;
   cells?: Float32Array;
   cellCount?: number;
@@ -42,6 +47,9 @@ interface MeshData {
     data: Float32Array;
     size: number;
     name: string; 
+    count: number;
+    divisor?: 0 | 1 | 2;
+    type: 'mat' | 'vec';
   }>;
   uniforms?: Record<string, any>; // TODO 后续修改相关的配置
   textureCoord?: {

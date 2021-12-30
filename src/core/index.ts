@@ -140,7 +140,7 @@ export default class PlayGL {
           let [, type, size, name] = _matched;
           program._buffers[name] = gl.createBuffer();
           program._attribute[name] = {
-            size: type === 'mat' ? Number(size || 1) ** 2 : Number(size || 1),
+            size: Number(size || 1),
             name,
             type: type as ('mat' | 'vec')
           }
@@ -447,12 +447,19 @@ export default class PlayGL {
     }
 
     Object.entries(program._attribute).forEach(([key, value]): void => {
-      const {size, name} = value;
+      const {size, name, type} = value;
       gl.bindBuffer(gl.ARRAY_BUFFER, this.program._buffers[name]);
       const location = gl.getAttribLocation(program, name);
       if (location > -1) {
-        gl.vertexAttribPointer(location, size, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(location);
+        if (type === 'mat') {
+          for (let i = 0; i < size; i++) {
+            gl.enableVertexAttribArray(location + i);
+            gl.vertexAttribPointer(location + i, size, gl.FLOAT, false, (size ** 2), i * (size ** 2));
+          }
+        } else {
+          gl.vertexAttribPointer(location, size, gl.FLOAT, false, 0, 0);
+          gl.enableVertexAttribArray(location);
+        }
       }
     })
   }
@@ -463,9 +470,9 @@ export default class PlayGL {
     if (!data) {
       throw new Error('mesh data should`t empty');
     }
-    const {positions, cells, uniforms, attributes, textureCoord, useBlend, useCullFace } = data;
+    const {positions, cells, uniforms, attributes, textureCoord, useBlend, useCullFace, instanceCount } = data;
     const positionFloatArray = pointsToBuffer(positions, Float32Array);
-    
+    meshData.instanceCount = instanceCount || 0;
     meshData.position = positionFloatArray;
     meshData.useBlend = useBlend || false;
     meshData.useCullFace = useCullFace || false;
@@ -482,15 +489,19 @@ export default class PlayGL {
     if (attributes) {
       meshData.attributes = {};
       Object.entries(attributes).forEach(([key, value]) => {
+        const { data, divisor } = value;
         if (this.program._attribute[key]) {
-          const {size} = this.program._attribute[key];
-          if (value[0]?.length !== size) {
+          const {size, type} = this.program._attribute[key];
+          if (data[0]?.length !== (type === 'mat' ? (size ** 2) : size)) {
             throw new Error(`the attribute '${key}' in shader size is ${size}, but input is ${value[0]?.length}`);
           }
           meshData.attributes[key] = {
             name: key,
-            size: value[0]?.length,
-            data: pointsToBuffer(value || [], Float32Array)
+            divisor,
+            type,
+            size: data[0]?.length,
+            count: data?.length || 0,
+            data: pointsToBuffer(data || [], Float32Array)
           }
         } else {
           console.warn(`the ${key} don't exist in shader !`);
@@ -565,12 +576,13 @@ export default class PlayGL {
     const {gl, program} = this;
 
     this.program.meshDatas.forEach(meshData => {
-      const {position, cells, cellCount, attributes, textureCoord, uniforms, useBlend, useCullFace } = meshData;
+      const {position, cells, cellCount, attributes, textureCoord, uniforms, useBlend, useCullFace, instanceCount } = meshData;
       if (useBlend) {
         gl.enable(gl.BLEND);
       } else {
         gl.disable(gl.BLEND);
       }
+
       if (useCullFace) {
         gl.enable(gl.CULL_FACE);
       } else {
@@ -592,9 +604,24 @@ export default class PlayGL {
       
       if (attributes) {
         Object.entries(attributes).forEach(([key, value]) => {
-          const {data, name} = value;
+          const {data, name, divisor, type, size} = value;
           gl.bindBuffer(gl.ARRAY_BUFFER, program._buffers[name]);
           gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+          if (divisor !== undefined) {
+            const location = gl.getAttribLocation(program, name);
+            if(location > -1) {
+              gl.enableVertexAttribArray(location);
+              if (this.options.isWebGL2) {
+                if (type === 'mat') {
+                  for (let i = 0; i < Math.sqrt(size); i++) {
+                    (gl as WebGL2RenderingContext).vertexAttribDivisor(location + i, divisor);
+                  }
+                } else {
+                  (gl as WebGL2RenderingContext).vertexAttribDivisor(location, divisor);
+                }
+              }
+            }
+          }
         })
       }
 
@@ -602,11 +629,18 @@ export default class PlayGL {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.program._buffers.textCoordBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, textureCoord?.data, gl.STATIC_DRAW);
       }
-
-      if (cells) {
-        gl.drawElements(gl.TRIANGLES, cellCount, gl.UNSIGNED_SHORT, 0);
+      if (!!instanceCount) {
+        if (cells) {
+          (gl as WebGL2RenderingContext).drawElementsInstanced(gl.TRIANGLES, cellCount, gl.UNSIGNED_SHORT, 0, instanceCount);
+        } else {
+          (gl as WebGL2RenderingContext).drawArraysInstanced(gl.TRIANGLES, 0, position.length / program._dimension, instanceCount);
+        }
       } else {
-        gl.drawArrays(gl.TRIANGLES, 0, position.length / program._dimension);
+        if (cells) {
+          gl.drawElements(gl.TRIANGLES, cellCount, gl.UNSIGNED_SHORT, 0);
+        } else {
+          gl.drawArrays(gl.TRIANGLES, 0, position.length / program._dimension);
+        }
       }
     })
   }
