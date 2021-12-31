@@ -57,6 +57,7 @@ export default class PlayGL {
     preserveDrawingBuffer: true,
     depth: true,
     stencil: true,
+    antialias: false,
     autoUpdate: false,
     vertexPositionName: 'a_vertexPosition',
     vertexTextuseCoordsName: 'a_textureCoord'
@@ -532,14 +533,14 @@ export default class PlayGL {
 
   createFrameBuffer() {
     const {gl, options, canvas} = this;
-    const {depth, stencil} = options;
+    const {depth, stencil, samples, antialias} = options;
+    console.log(antialias);
     const {width, height} = canvas;
     const frameBuffer: PlayGLFrameBuffer = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
 
     const textureBuffer = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, textureBuffer);
-    
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -551,7 +552,12 @@ export default class PlayGL {
     if (depth && stencil) {
       const rbo = gl.createRenderbuffer();
       gl.bindRenderbuffer(gl.RENDERBUFFER, rbo);
-      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, width, height);
+      if (samples) {
+        (gl as WebGL2RenderingContext).renderbufferStorageMultisample(gl.RENDERBUFFER, samples, (gl as WebGL2RenderingContext).DEPTH24_STENCIL8, width, height);
+      } else {
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, width, height);
+      }
+      gl.bindRenderbuffer(gl.RENDERBUFFER, null);
       gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, rbo);
     }
 
@@ -656,9 +662,18 @@ export default class PlayGL {
   }
 
   render(noClear?: boolean) {
-    const {gl} = this;
+    const {gl, options, canvas} = this;
+    const { antialias, samples } = options;
+    console.log(antialias)
+    const {width, height} = canvas;
     if (this.frameBuffer) {
-      gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
+      if (samples) {
+        gl.bindFramebuffer((gl as WebGL2RenderingContext).READ_FRAMEBUFFER, this.frameBuffer);
+        gl.bindFramebuffer((gl as WebGL2RenderingContext).DRAW_FRAMEBUFFER, null);
+        (gl as WebGL2RenderingContext).blitFramebuffer(0, 0, width, height, 0, 0, width, height, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+      } else {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
+      }
     }
 
     if (!noClear) {

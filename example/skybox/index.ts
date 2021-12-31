@@ -11,7 +11,8 @@ const canvas = document.getElementById('page');
 (async function() {
 
   const playGl = new PlayGL(canvas, {
-    isWebGL2: true
+    isWebGL2: true,
+    antialias: true
   });
 
   playGl.clear();
@@ -62,9 +63,10 @@ const canvas = document.getElementById('page');
 
   const models = [];
   const normalModels = [];
-  for (let y = -300; y < 300; y += 2) {
-    for (let x = -300; x < 300; x += 2) {
-      const model = mat4.translate([], mat4.create(), [x / 10, y / 10, x / 10]);
+  for (let y = -100; y < 100; y += 2) {
+    for (let x = -100; x < 100; x += 2) {
+      const model1 = mat4.rotate([], mat4.create(), x / 20, [3, 7, 0]);
+      const model = mat4.translate([], model1, [x / 10, y / 10, 0]);
       const normalModel = mat4.transpose([], mat4.invert(mat4.create(), model));
       models.push(model);
       normalModels.push(normalModel);

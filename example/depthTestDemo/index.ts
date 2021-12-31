@@ -9,7 +9,11 @@ import vertexFrameShader from './vertexFrameShader.glsl';
 const canvas = document.getElementById('page');
 
 (async function() {
-  const playGl = new PlayGL(canvas);
+  const playGl = new PlayGL(canvas, {
+    antialias: false,
+    samples: 4,
+    isWebGL2: true
+  });
 
   playGl.clear();
 

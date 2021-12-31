@@ -4,6 +4,7 @@ interface PlayGLOption extends WebGLContextAttributes {
   isWebGL2?: boolean;
   depth?: boolean;
   stencil?: boolean;
+  samples?: number;
   vertexPositionName?: string;
   vertexTextuseCoordsName?: string;
   autoUpdate?: boolean;
