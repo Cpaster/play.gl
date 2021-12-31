@@ -454,7 +454,7 @@ export default class PlayGL {
         if (type === 'mat') {
           for (let i = 0; i < size; i++) {
             gl.enableVertexAttribArray(location + i);
-            gl.vertexAttribPointer(location + i, size, gl.FLOAT, false, (size ** 2), i * (size ** 2));
+            gl.vertexAttribPointer(location + i, size, gl.FLOAT, false, 4 * (size ** 2), i * (size ** 2));
           }
         } else {
           gl.vertexAttribPointer(location, size, gl.FLOAT, false, 0, 0);
@@ -601,7 +601,7 @@ export default class PlayGL {
           this.setUniform(key, value);
         });
       }
-      
+      const locations = [];
       if (attributes) {
         Object.entries(attributes).forEach(([key, value]) => {
           const {data, name, divisor, type, size} = value;
@@ -614,11 +614,14 @@ export default class PlayGL {
               if (this.options.isWebGL2) {
                 if (type === 'mat') {
                   for (let i = 0; i < Math.sqrt(size); i++) {
+                    locations.push(location + i);
                     (gl as WebGL2RenderingContext).vertexAttribDivisor(location + i, divisor);
                   }
                 } else {
+                  locations.push(location);
                   (gl as WebGL2RenderingContext).vertexAttribDivisor(location, divisor);
                 }
+                gl.bindBuffer(gl.ARRAY_BUFFER, null);
               }
             }
           }
@@ -635,6 +638,9 @@ export default class PlayGL {
         } else {
           (gl as WebGL2RenderingContext).drawArraysInstanced(gl.TRIANGLES, 0, position.length / program._dimension, instanceCount);
         }
+        locations.forEach((location) => {
+          (gl as WebGL2RenderingContext).vertexAttribDivisor(location, null);
+        });
       } else {
         if (cells) {
           gl.drawElements(gl.TRIANGLES, cellCount, gl.UNSIGNED_SHORT, 0);

@@ -41,6 +41,7 @@ const canvas = document.getElementById('page');
       [-1.0, -1.0, -1.0], [-1.0, -1.0, 1.0], [1.0, -1.0, -1.0], [1.0, -1.0, -1.0], [-1.0, -1.0, 1.0], [1.0, -1.0, 1.0]
     ]
   });
+  // playGl.draw();
 
   const cubeTextures = await playGl.loadTexture([
     './example/skybox/img/sky/right.png',
@@ -59,16 +60,30 @@ const canvas = document.getElementById('page');
   playGl.use(program);
   // playGl.setUniform('projection', perspectiveMatix);
 
+  const models = [];
+  const normalModels = [];
+  for (let y = -300; y < 300; y += 2) {
+    for (let x = -300; x < 300; x += 2) {
+      const model = mat4.translate([], mat4.create(), [x / 10, y / 10, x / 10]);
+      const normalModel = mat4.transpose([], mat4.invert(mat4.create(), model));
+      models.push(model);
+      normalModels.push(normalModel);
+    }
+  }
+
+  const positions = [
+    [-0.05, -0.05, -0.05], [0.05, -0.05, -0.05], [0.05, 0.05, -0.05], [0.05, 0.05, -0.05], [-0.05, 0.05,-0.05], [-0.05, -0.05, -0.05],
+    [-0.05, -0.05, 0.05], [0.05, -0.05, 0.05], [0.05, 0.05, 0.05], [0.05, 0.05, 0.05], [-0.05, 0.05,0.05], [-0.05, -0.05, 0.05],
+    [-0.05, 0.05, 0.05], [-0.05, 0.05, -0.05], [-0.05, -0.05, -0.05], [-0.05, -0.05, -0.05], [-0.05, -0.05,0.05], [-0.05, 0.05, 0.05],
+    [0.05, 0.05, 0.05], [0.05, 0.05, -0.05], [0.05, -0.05, -0.05], [0.05, -0.05, -0.05], [0.05, -0.05, 0.05], [0.05, 0.05, 0.05],
+    [-0.05, -0.05, -0.05], [0.05, -0.05, -0.05], [0.05, -0.05, 0.05], [0.05, -0.05, 0.05], [-0.05, -0.05,0.05], [-0.05, -0.05, -0.05],
+    [-0.05, 0.05, -0.05], [0.05, 0.05, -0.05], [0.05, 0.05, 0.05], [0.05, 0.05, 0.05], [-0.05, 0.05, 0.05], [-0.05, 0.05, -0.05]
+  ];
+
   // // box
   playGl.addMeshData({
-    positions: [
-      [-0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, 0.5, -0.5], [0.5, 0.5, -0.5], [-0.5, 0.5,-0.5], [-0.5, -0.5, -0.5],
-      [-0.5, -0.5, 0.5], [0.5, -0.5, 0.5], [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [-0.5, 0.5,0.5], [-0.5, -0.5, 0.5],
-      [-0.5, 0.5, 0.5], [-0.5, 0.5, -0.5], [-0.5, -0.5, -0.5], [-0.5, -0.5, -0.5], [-0.5, -0.5,0.5], [-0.5, 0.5, 0.5],
-      [0.5, 0.5, 0.5], [0.5, 0.5, -0.5], [0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, -0.5, 0.5], [0.5, 0.5, 0.5],
-      [-0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, -0.5, 0.5], [0.5, -0.5, 0.5], [-0.5, -0.5,0.5], [-0.5, -0.5, -0.5],
-      [-0.5, 0.5, -0.5], [0.5, 0.5, -0.5], [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [-0.5, 0.5, 0.5], [-0.5, 0.5, -0.5]
-    ],
+    instanceCount: models?.length,
+    positions: positions,
     attributes: {
       aNormal: {
         data: [
@@ -79,19 +94,26 @@ const canvas = document.getElementById('page');
           [0, -1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0],
           [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0]
         ]
+      },
+      aInstanceMatrix: {
+        data: models,
+        divisor: 1
+      },
+      aInstanceNormalMatrix: {
+        data: normalModels,
+        divisor: 1
       }
     },
     uniforms: {
       skybox: cubeTextures
     },
   });
-
+  playGl.setUniform('projection', perspectiveMatix);
   let time = 0;
   const radius = 5;
   const {gl} = playGl;
   playGl.setBlockUniformValue('Matrices', {
-    projection: perspectiveMatix,
-    test: [1.0]
+    projection: perspectiveMatix
   });
   function updateCamera() {
     time++;
@@ -102,9 +124,6 @@ const canvas = document.getElementById('page');
     const y = Math.sin(time / 100) * radius;
     const cameraPos = [x, y, z];
     mat4.lookAt(view, cameraPos, [0, 0, 0], [0, 1, 0]);
-    // playGl.setBlockUniformValue('Matrices', {
-    //   test: [z]
-    // });
     playGl.use(program);
     playGl.setUniform('view', view);
     const translate = mat4.translate([], mat4.create(), [0, 0, 0]);
