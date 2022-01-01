@@ -8,8 +8,8 @@ module.exports = {
   // entry: './demo/light/index.ts',
   // entry: './example/instancingQuads/index.ts',
   // entry: './example/blockUniform/index.ts',
-  entry: './example/skybox/index.ts',
-  // entry: './example/depthTestDemo/index.ts',
+  // entry: './example/skybox/index.ts',
+  entry: './example/depthTestDemo/index.ts',
   module: {
     rules: [{
       test: /\.glsl$/,

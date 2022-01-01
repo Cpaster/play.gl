@@ -10,7 +10,7 @@ const canvas = document.getElementById('page');
 
 (async function() {
   const playGl = new PlayGL(canvas, {
-    antialias: false,
+    antialias: true,
     samples: 4,
     isWebGL2: true
   });
@@ -81,9 +81,8 @@ const canvas = document.getElementById('page');
     }
   });
   const fbo = playGl.createFrameBuffer();
-  console.log(fbo);
-  console.log(program2);
   playGl.bindFBO(fbo);
+  // playGl.gl.enable(playGl.gl.DEPTH_TEST);
   playGl.render();
   playGl.setDefaultFBO();
 

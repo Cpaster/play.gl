@@ -538,6 +538,19 @@ export default class PlayGL {
     const {width, height} = canvas;
     const frameBuffer: PlayGLFrameBuffer = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+    
+    const colorFrameBuffer = gl.createFramebuffer();
+    if (samples) {
+      const colorRenderBuffer = gl.createRenderbuffer();
+      gl.bindRenderbuffer(gl.RENDERBUFFER, colorRenderBuffer);
+      (gl as WebGL2RenderingContext).renderbufferStorageMultisample(gl.RENDERBUFFER, samples, (gl as WebGL2RenderingContext).RGBA8, width, height);
+      // gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, colorRenderBuffer);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      // const colorFrameBuffer = gl.createFramebuffer();
+      frameBuffer.colorFrame = colorFrameBuffer;
+      gl.bindFramebuffer(gl.FRAMEBUFFER, colorFrameBuffer);
+    } 
 
     const textureBuffer = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, textureBuffer);
@@ -548,8 +561,9 @@ export default class PlayGL {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,  gl.TEXTURE_2D, textureBuffer, 0);
     frameBuffer.texture = textureBuffer;
-    
+
     if (depth && stencil) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
       const rbo = gl.createRenderbuffer();
       gl.bindRenderbuffer(gl.RENDERBUFFER, rbo);
       if (samples) {
@@ -561,10 +575,10 @@ export default class PlayGL {
       gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, rbo);
     }
 
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
       console.error('framebuffer create fail');
     }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     return frameBuffer;
   }
 
@@ -668,12 +682,18 @@ export default class PlayGL {
     const {width, height} = canvas;
     if (this.frameBuffer) {
       if (samples) {
+        // gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
+        // gl.clearColor(0.1, 0.1, 0.1, 1.0);
+        // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        // gl.enable(gl.DEPTH_TEST);
         gl.bindFramebuffer((gl as WebGL2RenderingContext).READ_FRAMEBUFFER, this.frameBuffer);
-        gl.bindFramebuffer((gl as WebGL2RenderingContext).DRAW_FRAMEBUFFER, null);
+        gl.bindFramebuffer((gl as WebGL2RenderingContext).DRAW_FRAMEBUFFER, this.frameBuffer.colorFrame);
+        // (gl as WebGL2RenderingContext).clearBufferfv((gl as WebGL2RenderingContext).COLOR, 0, [0.0, 0.0, 0.0, 1.0]);
         (gl as WebGL2RenderingContext).blitFramebuffer(0, 0, width, height, 0, 0, width, height, gl.COLOR_BUFFER_BIT, gl.NEAREST);
       } else {
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
       }
+      // gl.disable(gl.DEPTH_TEST);
     }
 
     if (!noClear) {
