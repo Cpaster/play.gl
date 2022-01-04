@@ -4,7 +4,7 @@ import * as mat4 from '../../src/math/mat4';
 import vertexShader from './vertexShader.glsl';
 import framentShader from './fragmentShader.glsl';
 
-import Lights from './lights';
+import LightCluster from '../common/lights';
 
 const canvas = document.getElementById('page');
 
@@ -17,7 +17,7 @@ const canvas = document.getElementById('page');
 
   playGl.use(program);
 
-  const lightCluster = new Lights(playGl, false);
+  const lightCluster = new LightCluster(playGl, false);
 
   lightCluster.addDirectionLight({
     direction: [0, 0, -1],

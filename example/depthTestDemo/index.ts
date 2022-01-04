@@ -11,7 +11,7 @@ const canvas = document.getElementById('page');
 (async function() {
   const playGl = new PlayGL(canvas, {
     antialias: true,
-    samples: 4,
+    samples: 0,
     isWebGL2: true
   });
 
@@ -80,43 +80,50 @@ const canvas = document.getElementById('page');
       texture1: wallTexture
     }
   });
-  const fbo = playGl.createFrameBuffer();
-  playGl.bindFBO(fbo);
+  // const fbo = playGl.createFrameBuffer();
+  // playGl.bindFBO(fbo);
   // playGl.gl.enable(playGl.gl.DEPTH_TEST);
-  playGl.render();
-  playGl.setDefaultFBO();
+  // playGl.render();
+  // playGl.setDefaultFBO();
 
   playGl.use(program2);
+  // console.log(program2);
 
   playGl.addMeshData({
     positions: [[0.5, 0.5, 0], [0.5, -0.5, 0], [-0.5, -0.5, 0], [-0.5, 0.5, 0]],
     textureCoord: [[1, 1], [1, 0], [0, 0], [0, 1]],
     cells: [[0, 1, 2], [2, 3, 0]],
-    uniforms: {
-      screenTexture: fbo.texture
-    }
+    // uniforms: {
+    //   screenTexture: fbo.texture
+    // }
     // attributes: {
     //   color: [[1, 0, 0, 1], [0, 1, 0, 1], [0, 0, 1, 1]]
     // }
   })
-  playGl.draw();
+  // playGl.draw();
 
   // playGl.setDefaultFBO();
   // playGl.render();
   // console.log(fbo.toString());
 
-  // let time = 0;
-  // const radius = 4;
+  let time = 0;
+  const radius = 4;
+  const fbo = playGl.createFrameBuffer();
+  function updateCamera() {
+    time++;
+    playGl.use(program);
+    playGl.bindFBO(fbo);
+    const x = Math.sin(time / 100) * radius;
+    const z = Math.cos(time / 100) * radius;
+    mat4.lookAt(view, [x, 0, z], [0, 0, 0], [0, 1, 0]);
+    playGl.setUniform('view', view);
+    playGl.render();
+    playGl.setDefaultFBO();
+    playGl.use(program2);
+    playGl.setUniform('screenTexture', fbo.texture);
+    playGl.render();
+    requestAnimationFrame(updateCamera);
+  }
 
-  // function updateCamera() {
-  //   time++;
-  //   playGl.render();
-  //   const x = Math.sin(time / 100) * radius;
-  //   const z = Math.cos(time / 100) * radius;
-  //   mat4.lookAt(view, [x, 0, z], [0, 0, 0], [0, 1, 0]);
-  //   playGl.setUniform('view', view);
-  //   // requestAnimationFrame(updateCamera);
-  // }
-
-  // updateCamera();
+  updateCamera();
 })()

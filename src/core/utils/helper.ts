@@ -1,3 +1,6 @@
+export const isType = (type: string, v: any) => {
+  return Object.prototype.toString.call(v) === `[object ${type}]`
+}
 export const pointsToBuffer = (points: Array<Array<number>>, Type) => {
   Type = Type ? Type : Float32Array;
   if (!points?.length) {

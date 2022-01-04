@@ -3,9 +3,9 @@ interface PonitLightStruct {
   ambient: Vec3
   diffuse: Vec3;
   specular: Vec3;
-  constant: number;
-  linear: number;
-  quadratic: number;
+  constant?: number;
+  linear?: number;
+  quadratic?: number;
 }
 
 interface SpotLightStruct {

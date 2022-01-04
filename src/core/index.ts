@@ -1,4 +1,4 @@
-import { pointsToBuffer, createProgram, loadImage, arrayToBuffer } from './utils/helper';
+import { pointsToBuffer, createProgram, loadImage, arrayToBuffer, isType } from './utils/helper';
 import DEFAULT_VERTEX from './defaultVertexShader.glsl';
 import DEFAULT_FRAGMENT from './defaultFragmentShader.glsl';
 
@@ -23,6 +23,21 @@ const uniformTypeMap = {
   sampler2DRect: 'sampler2DRect',
   sampler2DRectShadow: 'sampler2DRectShadow',
 };
+
+const attachmentMap = {
+  color: {
+    format: 'RGBA',
+    internalFormat: 'RGBA',
+    attachment: 'COLOR_ATTACHMENT0',
+    dataType: 'UNSIGNED_BYTE',
+  },
+  depth: {
+    internalFormat: 'DEPTH_COMPONENT',
+    format: 'DEPTH_COMPONENT',
+    attachment: 'DEPTH_ATTACHMENT',
+    dataType: 'UNSIGNED_INT',
+  }
+}
 
 export default class PlayGL {
   canvas: HTMLCanvasElement;
@@ -53,6 +68,10 @@ export default class PlayGL {
     return gl.getParameter(gl.CURRENT_PROGRAM);
   }
 
+  get glContext() {
+    return this.gl;
+  }
+
   static defaultOptions = {
     preserveDrawingBuffer: true,
     depth: true,
@@ -81,6 +100,11 @@ export default class PlayGL {
     }
     if (stencil) {
       gl.enable(gl.STENCIL_TEST);
+    }
+
+    const ext = gl.getExtension('WEBGL_depth_texture');
+    if (!ext) {
+      console.log('error');
     }
     // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -323,7 +347,9 @@ export default class PlayGL {
         uniformInfo.value = idx;
       }
     } else {
-      let value: Array<number> = Array.isArray(v) ? v : [v];
+      let value: Array<number> = (
+        Array.isArray(v) || isType('Float32Array', v) || isType('Float16Array', v)
+      ) ? v : [v];
 
       const setUniform = gl[`uniform${type}`].bind(gl);
       const isMatrix = type.indexOf('Matrix') > -1;
@@ -471,7 +497,7 @@ export default class PlayGL {
     if (!data) {
       throw new Error('mesh data should`t empty');
     }
-    const {positions, cells, uniforms, attributes, textureCoord, useBlend, useCullFace, instanceCount } = data;
+    const {positions, cells, uniforms = {}, attributes, textureCoord, useBlend, useCullFace, instanceCount } = data;
     const positionFloatArray = pointsToBuffer(positions, Float32Array);
     meshData.instanceCount = instanceCount || 0;
     meshData.position = positionFloatArray;
@@ -521,8 +547,6 @@ export default class PlayGL {
       Object.entries(program._uniform).forEach(([key]) => {
         if (name === key || new RegExp(`^${key}$`).test(name)) {
           meshData.uniforms[name] = val;
-        } else {
-          console.warn(`${name} isn't vaild`);
         }
       })
     };
@@ -531,38 +555,41 @@ export default class PlayGL {
     return meshData;
   }
 
-  createFrameBuffer() {
+  createFrameBuffer(type = 'color', fbOpt: {
+    width?: number;
+    height?: number;
+  } = {}) {
+    let {width, height} = fbOpt;
     const {gl, options, canvas} = this;
-    const {depth, stencil, samples, antialias} = options;
-    console.log(antialias);
-    const {width, height} = canvas;
+    const {depth, stencil, samples} = options;
+    width = width || canvas.width;
+    height = height || canvas.height;
+
     const frameBuffer: PlayGLFrameBuffer = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-    
-    const colorFrameBuffer = gl.createFramebuffer();
+    const attachment = attachmentMap[type];
     if (samples) {
+      const colorFrameBuffer = gl.createFramebuffer();
       const colorRenderBuffer = gl.createRenderbuffer();
       gl.bindRenderbuffer(gl.RENDERBUFFER, colorRenderBuffer);
       (gl as WebGL2RenderingContext).renderbufferStorageMultisample(gl.RENDERBUFFER, samples, (gl as WebGL2RenderingContext).RGBA8, width, height);
-      // gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
       gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, colorRenderBuffer);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      // const colorFrameBuffer = gl.createFramebuffer();
       frameBuffer.colorFrame = colorFrameBuffer;
       gl.bindFramebuffer(gl.FRAMEBUFFER, colorFrameBuffer);
-    } 
+    }
 
     const textureBuffer = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, textureBuffer);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl[attachment.internalFormat], 512, 512, 0, gl[attachment.format], gl[attachment.dataType], null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,  gl.TEXTURE_2D, textureBuffer, 0);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl[attachment.attachment],  gl.TEXTURE_2D, textureBuffer, 0);
     frameBuffer.texture = textureBuffer;
-
-    if (depth && stencil) {
+    
+    if (type === 'color' && depth && stencil) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
       const rbo = gl.createRenderbuffer();
       gl.bindRenderbuffer(gl.RENDERBUFFER, rbo);
@@ -573,6 +600,11 @@ export default class PlayGL {
       }
       gl.bindRenderbuffer(gl.RENDERBUFFER, null);
       gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, rbo);
+    }
+
+    if (type === 'depth') {
+      // (gl as WebGL2RenderingContext).drawBuffers(null);
+      // (gl as WebGL2RenderingContext).readBuffer(gl.NONE);
     }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -677,8 +709,8 @@ export default class PlayGL {
 
   render(noClear?: boolean) {
     const {gl, options, canvas} = this;
-    const { antialias, samples } = options;
-    console.log(antialias)
+    const { samples } = options;
+    // console.log(antialias)
     const {width, height} = canvas;
     if (this.frameBuffer) {
       if (samples) {
