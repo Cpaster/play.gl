@@ -13,7 +13,7 @@ import vertex from './vertex.glsl';
 import debugFragment from './debug_fragment.glsl';
 import debugVertex from './debug_vertex.glsl';
 
-const canvas = document.getElementById('page');
+const canvas: HTMLCanvasElement = document.getElementById('page') as HTMLCanvasElement;
 
 // let lightPostion = [2, 7, 10];
 
@@ -101,11 +101,11 @@ function renderScene(playGl: PlayGL) {
   playGl.bindFBO(depthFBO);
   gl.viewport(0, 0, shadowWidth, shadowHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  gl.enable(gl.CULL_FACE);
-  gl.cullFace(gl.FRONT);
+  // gl.enable(gl.CULL_FACE);
+  // gl.cullFace(gl.FRONT);
   renderScene(playGl);
-  gl.cullFace(gl.BACK);
-  gl.disable(gl.CULL_FACE);
+  // gl.cullFace(gl.BACK);
+  // gl.disable(gl.CULL_FACE);
   playGl.setDefaultFBO();
   gl.viewport(0, 0, width, height);
   gl.clearColor(0, 0, 0, 1);
@@ -116,6 +116,7 @@ function renderScene(playGl: PlayGL) {
   playGl.setUniform('projection', projection);
   playGl.setUniform('diffuseTexture', texture);
   playGl.setUniform('shadowMap', depthFBO.texture);
+  playGl.setUniform('textureSize', [shadowWidth, shadowHeight]);
   playGl.setUniform('lightSpaceMatrix', lightSpaceMatrix);
   playGl.setUniform('lightPos', lightPostion);
 
@@ -126,7 +127,7 @@ function renderScene(playGl: PlayGL) {
     time++;
     const x = Math.sin(time / 100) * radius;
     const y = Math.cos(time / 100) * radius;
-    let viewPosition = [x, 1, y];
+    let viewPosition = [x, 4, y];
     const view = mat4.lookAt([], viewPosition, [0, 0, 0], [0, 1, 0]);
     playGl.setUniform('view', view);
     playGl.setUniform('viewPos', viewPosition);
