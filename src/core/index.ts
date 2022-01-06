@@ -41,6 +41,7 @@ const attachmentMap = {
 
 export default class PlayGL {
   canvas: HTMLCanvasElement;
+  mod: number;
   options: PlayGLOption;
   gl: WebGLRenderingContext | WebGL2RenderingContext;
   _max_texture_image_units: number;
@@ -85,6 +86,7 @@ export default class PlayGL {
   constructor(canvas, options?: PlayGLOption) {
     let gl: WebGLRenderingContext | WebGL2RenderingContext;
     this.canvas = canvas;
+
     this.options = Object.assign({}, PlayGL.defaultOptions, options || {});
     if (this.options.isWebGL2) {
       gl = canvas.getContext('webgl2', this.options);
@@ -92,6 +94,7 @@ export default class PlayGL {
       gl = canvas.getContext('webgl', this.options);
     }
     this.gl = gl;
+    this.mod = gl.TRIANGLES;
 
     const {depth, stencil} = this.options;
     if (depth) {
@@ -109,8 +112,7 @@ export default class PlayGL {
     // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     // 面剔除
-    gl.frontFace(gl.CCW);
-    gl.cullFace(gl.BACK);
+    // gl.frontFace(gl.CW);
   }
 
   clear() {
@@ -581,12 +583,23 @@ export default class PlayGL {
 
     const textureBuffer = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, textureBuffer);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl[attachment.internalFormat], 512, 512, 0, gl[attachment.format], gl[attachment.dataType], null);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl[attachment.internalFormat], width, height, 0, gl[attachment.format], gl[attachment.dataType], null);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl[attachment.attachment],  gl.TEXTURE_2D, textureBuffer, 0);
+
+    if (type === 'depth') {
+      const unusedTexture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, unusedTexture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, unusedTexture, 0); 
+    }
     frameBuffer.texture = textureBuffer;
     
     if (type === 'color' && depth && stencil) {
@@ -600,11 +613,6 @@ export default class PlayGL {
       }
       gl.bindRenderbuffer(gl.RENDERBUFFER, null);
       gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, rbo);
-    }
-
-    if (type === 'depth') {
-      // (gl as WebGL2RenderingContext).drawBuffers(null);
-      // (gl as WebGL2RenderingContext).readBuffer(gl.NONE);
     }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -625,7 +633,7 @@ export default class PlayGL {
   }
 
   _draw() {
-    const {gl, program} = this;
+    const {gl, program, mod} = this;
 
     this.program.meshDatas.forEach(meshData => {
       const {position, cells, cellCount, attributes, textureCoord, uniforms, useBlend, useCullFace, instanceCount } = meshData;
@@ -634,12 +642,12 @@ export default class PlayGL {
       } else {
         gl.disable(gl.BLEND);
       }
-
-      if (useCullFace) {
-        gl.enable(gl.CULL_FACE);
-      } else {
-        gl.disable(gl.CULL_FACE);
-      }
+      console.log(useCullFace);
+      // if (useCullFace) {
+      //   gl.enable(gl.CULL_FACE);
+      // } else {
+      //   gl.disable(gl.CULL_FACE);
+      // }
       gl.bindBuffer(gl.ARRAY_BUFFER, program._buffers.vertexBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, position, gl.STATIC_DRAW);
 
@@ -695,23 +703,25 @@ export default class PlayGL {
         });
       } else {
         if (cells) {
-          gl.drawElements(gl.TRIANGLES, cellCount, gl.UNSIGNED_SHORT, 0);
+          gl.drawElements(mod, cellCount, gl.UNSIGNED_SHORT, 0);
         } else {
-          gl.drawArrays(gl.TRIANGLES, 0, position.length / program._dimension);
+          gl.drawArrays(mod, 0, position.length / program._dimension);
         }
       }
     })
   }
 
-  draw() {
-    this.render(true);
+  draw(mod = this.gl.TRIANGLES) {
+    this.mod = mod;
+    this.render(mod, true);
   }
 
-  render(noClear?: boolean) {
+  render(mod = this.gl.TRIANGLES, noClear?: boolean) {
     const {gl, options, canvas} = this;
     const { samples } = options;
     // console.log(antialias)
     const {width, height} = canvas;
+    this.mod = mod;
     if (this.frameBuffer) {
       if (samples) {
         // gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);

@@ -6,7 +6,11 @@ uniform mat4 normalModel;
 uniform mat4 projection;
 uniform mat4 view;
 uniform mat4 model;
+
+// uniform mat4 lightView;
+// uniform mat4 lightProjection;
 uniform mat4 lightSpaceMatrix;
+
 
 varying vec3 FragPos;
 varying vec3 Normal;

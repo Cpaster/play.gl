@@ -1,7 +1,6 @@
 #ifdef GL_ES
 precision mediump float;
 #endif
-
 uniform sampler2D diffuseTexture;
 uniform sampler2D shadowMap;
 
@@ -13,27 +12,22 @@ varying vec3 Normal;
 varying vec2 TexCoords;
 varying vec4 FragPosLightSpace;
 
-float ShadowCalculation(vec4 fragPosLightSpace)
+float ShadowCalculation(vec4 fragPosLightSpace, float bias)
 {
-    // perform perspective divide
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    // transform to [0,1] range
     projCoords = projCoords * 0.5 + 0.5;
-    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
     float closestDepth = texture2D(shadowMap, projCoords.xy).r;
-    // get depth of current fragment from light's perspective
     float currentDepth = projCoords.z;
-    // check whether current frag pos is in shadow
-    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+    float shadow = (currentDepth) > closestDepth  ? 1.0 : 0.0;
 
     return shadow;
 }
 
 void main()
-{           
+{
     vec3 color = texture2D(diffuseTexture, TexCoords).rgb;
     vec3 normal = normalize(Normal);
-    vec3 lightColor = vec3(0.3);
+    vec3 lightColor = vec3(1.0);
     // ambient
     vec3 ambient = 0.3 * lightColor;
     // diffuse
@@ -46,11 +40,13 @@ void main()
     float spec = 0.0;
     vec3 halfwayDir = normalize(lightDir + viewDir);  
     spec = pow(max(dot(normal, halfwayDir), 0.0), 64.0);
-    vec3 specular = spec * lightColor;    
+    vec3 specular = spec * lightColor;
+    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
     // calculate shadow
-    float shadow = ShadowCalculation(FragPosLightSpace);
+    float shadow = ShadowCalculation(FragPosLightSpace, bias);
     // float shadow = 0.0;                      
     vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * color;    
     
     gl_FragColor = vec4(lighting, 1.0);
+    // gl_FragColor = vec4(vec3(shadow), 1.0);
 }
