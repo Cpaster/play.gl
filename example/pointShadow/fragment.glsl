@@ -2,8 +2,9 @@
 precision mediump float;
 #endif
 uniform sampler2D diffuseTexture;
-uniform sampler2D shadowMap;
+uniform samplerCube shadowMap;
 uniform vec2 textureSize;
+uniform vec3 color;
 
 uniform vec3 lightPos;
 uniform vec3 viewPos;
@@ -22,7 +23,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, float bias)
   float currentDepth = projCoords.z;
   for(int x = -2; x <= 2; ++x) {
     for(int y = -2; y <= 2; ++y) {
-      float pcfDepth = texture2D(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+      float pcfDepth = textureCube(shadowMap, vec3(1, 1, 1)).r; 
       shadow += (currentDepth - bias) > pcfDepth  ? 1.0 : 0.0;
     }
   }
@@ -34,9 +35,9 @@ float ShadowCalculation(vec4 fragPosLightSpace, float bias)
 
 void main()
 {
-    vec3 color = texture2D(diffuseTexture, TexCoords).rgb;
+    // vec3 color = texture2D(diffuseTexture, TexCoords).rgb;
     vec3 normal = normalize(Normal);
-    vec3 lightColor = vec3(1.0);
+    vec3 lightColor = vec3(0.6);
     // ambient
     vec3 ambient = 0.3 * lightColor;
     // diffuse
@@ -50,10 +51,10 @@ void main()
     vec3 halfwayDir = normalize(lightDir + viewDir);  
     spec = pow(max(dot(normal, halfwayDir), 0.0), 64.0);
     vec3 specular = spec * lightColor;
-    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+    // float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
     // calculate shadow
-    float shadow = ShadowCalculation(FragPosLightSpace, bias);
-    // float shadow = 0.0;                      
+    // float shadow = ShadowCalculation(FragPosLightSpace, bias);
+    float shadow = 0.0;                      
     vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * color;    
     
     gl_FragColor = vec4(lighting, 1.0);

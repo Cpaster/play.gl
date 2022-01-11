@@ -43,16 +43,30 @@ const shadowHeight = 1000;
 //   return planeGeo;
 // }
 
-function renderScene(playGl: PlayGL) {
+async function renderScene(playGl: PlayGL) {
+
+  const texture = await playGl.loadTexture('./example/common/img/wall.jpg', {
+    wrapS: 'REPEAT',
+    wrapT: 'REPEAT'
+  });
+
+  const texture2 = await playGl.loadTexture('https://t7.baidu.com/it/u=1595072465,3644073269&fm=193&f=GIF', {
+    wrapS: 'CLAMP_TO_EDGE',
+    wrapT: 'CLAMP_TO_EDGE',
+    minFilter: 'NEAREST',
+    magFilter: 'NEAREST',
+  });
 
   const planeGeo = createPlane(playGl, 5.0);
+  planeGeo.setMeshUniform('diffuseTexture', texture2);
   planeGeo.setMeshUniform('model', mat4.create());
   planeGeo.setMeshUniform('normalModel', mat4.create());
 
   const cube1Model = mat4.translate([], mat4.create(), [0, 0.5, 0]);
   const cube1Geo = createCube(playGl, 1);
+  cube1Geo.setMeshUniform('diffuseTexture', texture);
   cube1Geo.setMeshUniform('model', cube1Model);
-  planeGeo.setMeshUniform('normalModel', mat4.transpose([], mat4.invert([], cube1Model)));
+  cube1Geo.setMeshUniform('normalModel', mat4.transpose([], mat4.invert([], cube1Model)));
 
   const cube2Model = mat4.scale(
     [],
@@ -62,6 +76,7 @@ function renderScene(playGl: PlayGL) {
   
   const cube2Geo = createCube(playGl, 1);
   cube2Geo.setMeshUniform('model', cube2Model);
+  cube2Geo.setMeshUniform('diffuseTexture', texture);
   cube2Geo.setMeshUniform('normalModel', mat4.transpose([], mat4.invert([], cube2Model)));
 
   playGl.render();
@@ -71,10 +86,11 @@ function renderScene(playGl: PlayGL) {
   const {width, height} = canvas.getBoundingClientRect();
   const playGl = new PlayGL(canvas);
 
-  const texture = await playGl.loadTexture('./example/common/img/wall.jpg', {
-    wrapS: 'REPEAT',
-    wrapT: 'REPEAT'
-  });
+  // const texture = await playGl.loadTexture('./example/common/img/wall.jpg', {
+  //   wrapS: 'REPEAT',
+  //   wrapT: 'REPEAT'
+  // });
+//https://t7.baidu.com/it/u=1595072465,3644073269&fm=193&f=GIF
 
   const gl = playGl.glContext;
   const shadowProgram = playGl.createProgram(shadowFragment, shadowVertex);
@@ -103,7 +119,7 @@ function renderScene(playGl: PlayGL) {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   // gl.enable(gl.CULL_FACE);
   // gl.cullFace(gl.FRONT);
-  renderScene(playGl);
+  await renderScene(playGl);
   // gl.cullFace(gl.BACK);
   // gl.disable(gl.CULL_FACE);
   playGl.setDefaultFBO();
@@ -114,7 +130,6 @@ function renderScene(playGl: PlayGL) {
   playGl.use(program);
   const projection = mat4.perspective([], Math.PI / 2, width / height, 1, 1000);
   playGl.setUniform('projection', projection);
-  playGl.setUniform('diffuseTexture', texture);
   playGl.setUniform('shadowMap', depthFBO.texture);
   playGl.setUniform('textureSize', [shadowWidth, shadowHeight]);
   playGl.setUniform('lightSpaceMatrix', lightSpaceMatrix);
@@ -127,7 +142,7 @@ function renderScene(playGl: PlayGL) {
     time++;
     const x = Math.sin(time / 100) * radius;
     const y = Math.cos(time / 100) * radius;
-    let viewPosition = [x, 4, y];
+    let viewPosition = [x, 1, y];
     const view = mat4.lookAt([], viewPosition, [0, 0, 0], [0, 1, 0]);
     playGl.setUniform('view', view);
     playGl.setUniform('viewPos', viewPosition);

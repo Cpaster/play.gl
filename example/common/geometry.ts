@@ -41,7 +41,7 @@ export const createPlane = (glContext: PlayGL, size: number = 1) => {
       [size, -0.5, size], [-size, -0.5, -size], [size, -0.5, -size]
     ],
     textureCoord: [
-      [25, 0], [0, 0], [0, 25], [25, 0], [0, 25], [25, 25],
+      [1, 0], [0, 0], [0, 1], [1, 0], [0, 1], [1, 1],
     ],
     attributes: {
       aNormal: {

@@ -3,6 +3,7 @@ import DEFAULT_VERTEX from './defaultVertexShader.glsl';
 import DEFAULT_FRAGMENT from './defaultFragmentShader.glsl';
 
 const uniformTypeMap = {
+  bool: '1i',
   int: '1i',
   ivec2: '2i',
   ivec3: '3i',
@@ -47,6 +48,7 @@ export default class PlayGL {
   _max_texture_image_units: number;
   frameBuffer: PlayGLFrameBuffer;
   programs: PlayGlProgram[] = [];
+  // cubeFrameBuffers: PlayGLFrameBuffer[];
   blockUniforms: Record<
     string,
     {
@@ -106,6 +108,7 @@ export default class PlayGL {
     }
 
     const ext = gl.getExtension('WEBGL_depth_texture');
+    gl.getExtension('EXT_frag_depth');
     if (!ext) {
       console.log('error');
     }
@@ -557,6 +560,44 @@ export default class PlayGL {
     return meshData;
   }
 
+  createTextureCubeFrameBuffer(fbOpt: {
+    width?: number;
+    height?: number;
+  }) {
+    let { width, height } = fbOpt;
+    const {gl, canvas} = this;
+    width = width || canvas.width;
+    height = height || canvas.height;
+    const cubeFrameBuffers = [];
+
+    const textureBuffer = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, textureBuffer);
+    const attachment = attachmentMap['depth'];
+
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    
+    for (let i = 0; i < 6; i++) {
+      gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl[attachment.internalFormat], width, height, 0, gl[attachment.format], gl[attachment.dataType], null);
+      const frameBuffer: PlayGLFrameBuffer = gl.createFramebuffer();
+      cubeFrameBuffers.push(frameBuffer);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl[attachment.attachment],  gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, textureBuffer, 0);
+      
+      if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+        console.error('framebuffer create fail');
+      }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
+
+    return {
+      frameBuffers: cubeFrameBuffers,
+      texture: textureBuffer
+    };
+  }
+
   createFrameBuffer(type = 'color', fbOpt: {
     width?: number;
     height?: number;
@@ -614,11 +655,10 @@ export default class PlayGL {
       gl.bindRenderbuffer(gl.RENDERBUFFER, null);
       gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, rbo);
     }
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
       console.error('framebuffer create fail');
     }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     return frameBuffer;
   }
 
@@ -636,13 +676,12 @@ export default class PlayGL {
     const {gl, program, mod} = this;
 
     this.program.meshDatas.forEach(meshData => {
-      const {position, cells, cellCount, attributes, textureCoord, uniforms, useBlend, useCullFace, instanceCount } = meshData;
+      const {position, cells, cellCount, attributes, textureCoord, uniforms, useBlend, instanceCount } = meshData;
       if (useBlend) {
         gl.enable(gl.BLEND);
       } else {
         gl.disable(gl.BLEND);
       }
-      console.log(useCullFace);
       // if (useCullFace) {
       //   gl.enable(gl.CULL_FACE);
       // } else {
@@ -719,7 +758,6 @@ export default class PlayGL {
   render(mod = this.gl.TRIANGLES, noClear?: boolean) {
     const {gl, options, canvas} = this;
     const { samples } = options;
-    // console.log(antialias)
     const {width, height} = canvas;
     this.mod = mod;
     if (this.frameBuffer) {
