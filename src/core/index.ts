@@ -568,34 +568,31 @@ export default class PlayGL {
     const {gl, canvas} = this;
     width = width || canvas.width;
     height = height || canvas.height;
-    const cubeFrameBuffers = [];
 
     const textureBuffer = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, textureBuffer);
-    const attachment = attachmentMap['depth'];
+    const frameBuffer: PlayGLFrameBuffer = gl.createFramebuffer();
 
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
     for (let i = 0; i < 6; i++) {
-      gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl[attachment.internalFormat], width, height, 0, gl[attachment.format], gl[attachment.dataType], null);
-      const frameBuffer: PlayGLFrameBuffer = gl.createFramebuffer();
-      cubeFrameBuffers.push(frameBuffer);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl[attachment.attachment],  gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, textureBuffer, 0);
-      
-      if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
-        console.error('framebuffer create fail');
-      }
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    }
+      gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-    return {
-      frameBuffers: cubeFrameBuffers,
-      texture: textureBuffer
-    };
+      // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,  gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, textureBuffer, 0);
+    }
+    let depthBuffer = gl.createRenderbuffer();
+    gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, width, height);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, depthBuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    frameBuffer.texture = textureBuffer;
+    frameBuffer.isCubeBox = true;
+    frameBuffer.faceId = 0;
+    
+    return frameBuffer;
   }
 
   createFrameBuffer(type = 'color', fbOpt: {
@@ -772,6 +769,14 @@ export default class PlayGL {
         (gl as WebGL2RenderingContext).blitFramebuffer(0, 0, width, height, 0, 0, width, height, gl.COLOR_BUFFER_BIT, gl.NEAREST);
       } else {
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
+        if (this.frameBuffer.isCubeBox && this.frameBuffer.faceId < 6) {
+          const {texture, faceId} = this.frameBuffer;
+          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,  gl.TEXTURE_CUBE_MAP_POSITIVE_X + faceId, texture, 0);
+          this.frameBuffer.faceId += 1;
+        }
+        if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+          console.error('framebuffer create fail');
+        }
       }
       // gl.disable(gl.DEPTH_TEST);
     }

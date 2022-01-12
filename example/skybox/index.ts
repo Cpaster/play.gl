@@ -132,7 +132,7 @@ const canvas = document.getElementById('page');
     playGl.setUniform('cameraPos', cameraPos);
     playGl.setUniform('model', translate);
 
-    playGl.setUniform('normalModel', mat4.transpose([], mat4.invert([], translate)));
+    playGl.setUniform('normalModel', mat4.invert([], translate));
     playGl.draw();
     
     gl.depthFunc(gl.LEQUAL);

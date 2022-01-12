@@ -10,10 +10,63 @@ import shadowVertex from './shadow_vertex.glsl';
 import fragment from './fragment.glsl';
 import vertex from './vertex.glsl';
 
+import debugFragment from './debug_fragment.glsl';
+import debugvVertex from './debug_vertex.glsl';
+
 const canvas: HTMLCanvasElement = document.getElementById('page') as HTMLCanvasElement;
 
-const shadowWidth = 1000;
-const shadowHeight = 1000;
+const shadowWidth = 1024;
+const shadowHeight = 1025;
+
+const near = 0.1;
+const far = 6;
+
+// function renderDebugScene(playGl: PlayGL) {
+//   const cube1Model = mat4.translate([], mat4.create(), [0, 0, 0]);
+//   const cube1Geo = createCube(playGl, 1);
+//   cube1Geo.setMeshUniform('model', cube1Model);
+
+//   playGl.render();
+// }
+
+const sampleDist = [
+  [1, 1,  1], [ 1, -1,  1], [-1, -1,  1], [-1, 1,  1],
+  [1, 1, -1], [ 1, -1, -1], [-1, -1, -1], [-1, 1, -1],
+  [1, 1,  0], [ 1, -1,  0], [-1, -1,  0], [-1, 1,  0],
+  [1, 0,  1], [-1,  0,  1], [ 1,  0, -1], [-1, 0, -1],
+  [0, 1,  1], [ 0, -1,  1], [ 0, -1, -1], [ 0, 1, -1]
+]
+
+const positions = [
+  [1, 1, 1], [1, 1, -1], [1, -1, -1], [1, -1, -1], [1, -1, 1], [1, 1, 1],
+  [-1, 1, 1], [-1, 1, -1], [-1, -1, -1], [-1, -1, -1], [-1, -1,1], [-1, 1, 1],
+  [-1, 1, -1], [1, 1, -1], [1, 1, 1], [1, 1, 1], [-1, 1, 1], [-1, 1, -1],
+  [-1, -1, -1], [1, -1, -1], [1, -1, 1], [1, -1, 1], [-1, -1,1], [-1, -1, -1],
+  [-1, -1, 1], [1, -1, 1], [1, 1, 1], [1, 1, 1], [-1, 1,1], [-1, -1, 1],
+  [-1, -1, -1], [1, -1, -1], [1, 1, -1], [1, 1, -1], [-1, 1,-1], [-1, -1, -1],
+]
+
+function renderPScene(playGl: PlayGL, index) {
+  console.log(index);
+  const cube1Model = mat4.translate([], mat4.create(), [0, 0, 0]);
+  // const cube1Geo = createCube(playGl, 1);
+  const planeGeo = playGl.addMeshData({
+    positions: [
+      positions[index]
+    ]
+  });
+  planeGeo.setMeshUniform('model', cube1Model);
+
+  const cube2Model = mat4.translate([], mat4.create(), [-0.3, -0.3, 0]);
+  const cube2Model2 = mat4.rotate([], cube2Model, Math.PI / 3, [0, 1, 0]);
+
+  const cube2Geo = createCube(playGl, 0.2);
+  cube2Geo.setMeshUniform('model', cube2Model2);
+  // cube2Geo.setMeshUniform('reverseNormal', 0);
+  // cube2Geo.setMeshUniform('normalModel', mat4.transpose([], mat4.invert([], cube2Model2)));
+
+  playGl.render();
+}
 
 function renderScene(playGl: PlayGL) {
   const cube1Model = mat4.translate([], mat4.create(), [0, 0, 0]);
@@ -63,9 +116,7 @@ function lightProjectionAndViews(playGl, lightPostion) {
       direction: [0, 0, -1]
     }
   ];
-  const near = 1;
-  const far = 20;
-  const lightProjection = mat4.ortho([], -20, 20, -20, 20, near, far);
+  const lightProjection = mat4.ortho([], -1, 1, -1, 1, near, far);
   // const lightProjection = mat4.perspective([], Math.PI / 2, shadowWidth / shadowHeight, near, far);
   cameraConfs.forEach(cameraConf => {
     const lightView = mat4.lookAt([], lightPostion, vec3.add([], lightPostion, cameraConf.direction), cameraConf.up);
@@ -83,96 +134,93 @@ function lightProjectionAndViews(playGl, lightPostion) {
     antialias: true
   });
 
-  const texture = await playGl.loadTexture('./example/common/img/wall.jpg', {
-    wrapS: 'REPEAT',
-    wrapT: 'REPEAT'
-  });
+  // const texture = await playGl.loadTexture('./example/common/img/wall.jpg', {
+  //   wrapS: 'REPEAT',
+  //   wrapT: 'REPEAT'
+  // });
 
   const gl = playGl.glContext;
   const shadowProgram = playGl.createProgram(shadowFragment, shadowVertex);
   const program = playGl.createProgram(fragment, vertex);
-  // console.log(shadowProgram);
-  // gl.enable(gl.CULL_FACE);
-  // gl.cullFace(gl.CW);
-  // gl.disable(gl.CULL_FACE);
-  // const depthFBO = playGl.createFrameBuffer('depth', {
-  //   width: shadowWidth,
-  //   height: shadowHeight
-  // });
-  // console.log(depthFBO);
+  console.log(program);
 
-  // playGl.clear();
-  // const near = 1;
-  // const far = 20;
-  // const lightProjection = mat4.ortho([], -20, 20, -20, 20, near, far);
-  // const lightProjection = mat4.perspective([], Math.PI / 2, shadowWidth / shadowHeight, near, far);
-
-  // const lightView = mat4.lookAt([], lightPostion, [0, 0, 0], [0, 1, 0]);
-  // const lightSpaceMatrix = mat4.multiply([], lightProjection, lightView);
-  // playGl.use(shadowProgram);
-  // playGl.setUniform('lightSpaceMatrix', lightSpaceMatrix);
-  
-  // playGl.bindFBO(depthFBO);
-  // gl.viewport(0, 0, shadowWidth, shadowHeight);
-  // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  // renderScene(playGl);
-  // playGl.setDefaultFBO();
-  // gl.viewport(0, 0, width, height);
-  // gl.clearColor(0, 0, 0, 1);
-  // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  const debugProgram = playGl.createProgram(debugFragment, debugvVertex);
+  console.log(debugProgram);
 
   const cubeDepthFbo = playGl.createTextureCubeFrameBuffer({
     width: shadowWidth,
     height: shadowHeight
   });
-  console.log(cubeDepthFbo);
-  console.log(lightProjectionAndViews);
+  
   playGl.use(shadowProgram);
-  // playGl.use(shadowProgram);
 
-  // const matrixs = lightProjectionAndViews(playGl, [0.9, 0.9, 0.9]);
+  const lightPos = [0, 0, 0];
+  
+  const matrixs = lightProjectionAndViews(playGl, lightPos);
 
   gl.viewport(0, 0, shadowWidth, shadowHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  // cubeDepthFbo?.frameBuffers.forEach((fbo, index) => {
-  //   playGl.bindFBO(fbo);
-  //   playGl.setUniform('lightSpaceMatrix', matrixs[index]);
-  //   renderScene(playGl);
-  //   playGl.setDefaultFBO();
-  // });
+  playGl.bindFBO(cubeDepthFbo);
+  playGl.setUniform('far_plane', far);
+  playGl.setUniform('lightPos', lightPos);
+  matrixs.forEach((matrix, index) => {
+    playGl.setUniform('lightSpaceMatrix', matrix);
+    console.log(index);
+    renderPScene(playGl, index);
+  });
+  playGl.setDefaultFBO();
 
-  // console.log(cubeDepthFbo.texture);
+  // gl.viewport(0, 0, 1000, 1000);
+  // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  // playGl.use(debugProgram);
+  // playGl.setUniform('lightPos', lightPos);
+  // const projection = mat4.perspective([], Math.PI / 2, width / height, 0.1, 100);
+  // playGl.setUniform('projection', projection);
+  // playGl.setUniform('depthMap', cubeDepthFbo.texture);
+  // playGl.setUniform('projectionMatrix', matrixs);
+  // matrixs.forEach((matrix, index) => {
+  //   playGl.setUniform(`projectionMatrix[${index}]`, matrix);
+  // });
+  // renderDebugScene(playGl);
   
   playGl.use(program);
   const projection = mat4.perspective([], Math.PI / 2, width / height, 0.1, 100);
   // const projection = mat4.ortho([], -2, 2, -2, 2, 0.1, 7.5);
   playGl.setUniform('projection', projection);
-  playGl.setUniform('diffuseTexture', texture);
+  // playGl.setUniform('diffuseTexture', texture);
   // playGl.setUniform('shadowMap', cubeDepthFbo.texture);
+  playGl.setUniform('shadowMap', cubeDepthFbo.texture);
   playGl.setUniform('textureSize', [shadowWidth, shadowHeight]);
   // playGl.setUniform('lightSpaceMatrix', lightSpaceMatrix);
-
   let viewPosition = [1, 0, 0];
   const view = mat4.lookAt([], viewPosition, [0, 0, 0], [0, 1, 0]);
   playGl.setUniform('view', view);
   playGl.setUniform('viewPos', viewPosition);
+  matrixs.forEach((matrix, index) => {
+    playGl.setUniform(`projectionMatrix[${index}]`, matrix);
+  });
+  playGl.setUniform('far_plane', far);
+  sampleDist.forEach((sample, index) => {
+    playGl.setUniform(`samply_arr[${index}]`, sample);
+  })
+  playGl.setUniform('lightPos', lightPos);
+  renderScene(playGl);
+  // let time = 0;
+  // const radius = 3;
+  // function updateCamera() {
+    // time = (time === 500 ? 0 : time + 1);
+    // const r = Math.PI * 2;
+    // const x = Math.sin(r * (time / 900)) * radius;
+    // const y = Math.cos(r * (time / 900)) * radius;
+    // let lightPostion = [0.5, 0.5, 0];
+    // let viewPosition = [1, 0, 0];
+    // const view = mat4.lookAt([], viewPosition, [0, 0, 0], [0, 1, 0]);
+    // playGl.setUniform('view', view);
 
-  let time = 0;
-  const radius = 0.9;
-  renderScene(playGl); 
-  function updateCamera() {
-    console.log(time);
-    time = (time === 500 ? 0 : time + 1);
-    const r = Math.PI * 2;
-    const x = Math.sin(r * (time / 500)) * radius;
-    const y = Math.cos(r * (time / 500)) * radius;
-    let lightPostion = [x, y, 0];
-    playGl.setUniform('lightPos', lightPostion);
-
-    playGl.render();
+    // playGl.render();
   
     // requestAnimationFrame(updateCamera);
-  }
+  // }
 
-  updateCamera();
+  // updateCamera();
 })();
