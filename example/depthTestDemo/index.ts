@@ -10,7 +10,8 @@ const canvas = document.getElementById('page');
 
 (async function() {
   const playGl = new PlayGL(canvas, {
-    antialias: true,
+    // antialias: true,
+    depth: true,
     samples: 0,
     isWebGL2: true
   });
