@@ -37,8 +37,8 @@ export const createCube = (glContext: PlayGL, size: number = 1) => {
 export const createPlane = (glContext: PlayGL, size: number = 1) => {
   const planeGeo = glContext.addMeshData({
     positions: [
-      [size, -0.5, size], [-size, -0.5,  size], [-size, -0.5, -size],
-      [size, -0.5, size], [-size, -0.5, -size], [size, -0.5, -size]
+      [size, 0, size], [-size, 0,  size], [-size, 0, -size],
+      [size, 0, size], [-size, 0, -size], [size, 0, -size]
     ],
     textureCoord: [
       [1, 0], [0, 0], [0, 1], [1, 0], [0, 1], [1, 1],
