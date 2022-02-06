@@ -106,12 +106,10 @@ export default class PlayGL {
     if (stencil) {
       gl.enable(gl.STENCIL_TEST);
     }
-
-    const ext = gl.getExtension('WEBGL_depth_texture');
+    
+    gl.getExtension('WEBGL_depth_texture');
     gl.getExtension('EXT_frag_depth');
-    if (!ext) {
-      console.log('error');
-    }
+    // gl.getExtension('EXT_shader_io_blocks');
     // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     // 面剔除

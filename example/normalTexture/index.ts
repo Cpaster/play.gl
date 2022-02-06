@@ -28,8 +28,8 @@ function createTBN({
   ];
 
   return {
-    bitTangent: vec3.normalize([], vec3.scale([], f,bitTangent)),
-    tangent: vec3.normalize([], vec3.scale([], f, tangent))
+    bitTangent: vec3.normalize([], vec3.scale([], bitTangent, f)),
+    tangent: vec3.normalize([], vec3.scale([], tangent, f))
   }
 }
 
@@ -46,13 +46,13 @@ function createPlaneVertex() {
   const uv3 = [1.0, 0.0];
   const uv4 = [1.0, 1.0];
 
-  const normal = [0, 0, 1];
+  const normal = [0, 0, 1.0];
   
   let edge1 = vec3.subtract([], pos2, pos1);
   let edge2 = vec3.subtract([], pos3, pos1);
 
-  let deltaUV1 = vec3.subtract([], uv2, uv1);
-  let deltaUV2 = vec3.subtract([], uv3, uv1);
+  let deltaUV1 = vec3.subtract([], [...uv2, 0.0], [...uv1, 0.0]);
+  let deltaUV2 = vec3.subtract([], [...uv3, 0.0], [...uv1, 0.0]);
 
   const { bitTangent, tangent } = createTBN({
     edge1,
@@ -83,18 +83,23 @@ function createPlaneVertex() {
       pos3,
       pos4
     ],
+    textureCoord: [
+      uv1,
+      uv2,
+      uv3,
+      uv1,
+      uv3,
+      uv4,
+    ],
     attributes: {
       aNormal: {
-        data: new Array(6).fill(normal)
-      },
-      textureCoord: {
         data: [
-          uv1,
-          uv2,
-          uv3,
-          uv1,
-          uv3,
-          uv4,
+          normal,
+          normal,
+          normal,
+          normal,
+          normal,
+          normal
         ]
       },
       tangent: {
@@ -122,9 +127,15 @@ function createPlaneVertex() {
 }
 
 (async function() {
-  const playGl = new PlayGL(canvas);
+  const playGl = new PlayGL(canvas, {
+    isWebGL2: true,
+    antialias: true
+  });
   const program = playGl.createProgram(fragment, vertex);
   playGl.use(program);
+
+  // 设置基础信息
+  const viewPos = [0, 0, 5];
 
   // 创建投影相机信息
   const {width, height} = canvas.getBoundingClientRect();
@@ -136,18 +147,18 @@ function createPlaneVertex() {
   mat4.perspective(perspectiveMatix, Math.PI / 6, width / height, 0.1, 100);
   mat4.rotate(model, mat4.create(), 0, [1, 0, 0]);
 
-  mat4.lookAt(view, [1, 1, 3], [0, 0, 0], [0, 1, 0]);
+  mat4.lookAt(view, viewPos, [0, 0, 0], [0, 1, 0]);
   playGl.setUniform('view', view);
   playGl.setUniform('projection', perspectiveMatix);
   playGl.setUniform('model', model);
 
   // 创建纹理信息
-  const wall = await playGl.loadTexture('./img/brickwall.jpg', {
+  const wall = await playGl.loadTexture('./example/normalTexture/img/brickwall.jpg', {
     wrapS: 'REPEAT',
     wrapT: 'REPEAT'
   });
 
-  const wallNormal = await playGl.loadTexture('./img/brickwall_normal.jpg', {
+  const wallNormal = await playGl.loadTexture('./example/normalTexture/img/brickwall_normal.jpg', {
     wrapT: 'REPEAT',
     wrapS: 'REPEAT'
   });
@@ -155,9 +166,25 @@ function createPlaneVertex() {
   playGl.setUniform('diffuseMap', wall);
   playGl.setUniform('normalMap', wallNormal);
 
+  // 设置环境光照
   playGl.addMeshData({
     ...createPlaneVertex()
   });
 
-  playGl.render();
+  // playGl.render();
+
+  let time = 0;
+  const radius = 1;
+  function updateCamera() {
+    playGl.clear();
+    time++;
+    const x = Math.sin(time / 20) * radius;
+    const y = Math.cos(time / 20) * radius;
+    const lightPos = [x, y, 1];
+    playGl.setUniform('lightPos', lightPos);
+    playGl.render();
+    requestAnimationFrame(updateCamera);
+  }
+
+  updateCamera();
 })();
