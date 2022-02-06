@@ -22,7 +22,7 @@ uniform vec3 viewPos;
 
 void main()
 {
-    gl_Position = projection * view * model * vec4(a_vertexPosition, 1.0f);
+    gl_Position = projection * view * model * vec4(a_vertexPosition, 1.0);
     FragPos = vec3(model * vec4(a_vertexPosition, 1.0));   
     TexCoords = a_textureCoord;
     

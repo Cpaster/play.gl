@@ -1,4 +1,5 @@
 import PlayGL from '../../src/core';
+import { createTBN } from '../../src/helper';
 import * as mat4 from '../../src/math/mat4';
 import * as vec3 from '../../src/math/vec3';
 
@@ -6,32 +7,6 @@ import fragment from './fragment.glsl';
 import vertex from './vertex.glsl';
 
 const canvas: HTMLCanvasElement = document.getElementById('page') as HTMLCanvasElement;
-
-function createTBN({
-  edge1,
-  edge2,
-  deltaUV1,
-  deltaUV2
-}) {
-  const f = 1 / (edge1[0] * edge2[1] - edge1[1] * edge2[0]);
-
-  const tangent = [
-    deltaUV2[1] * edge1[0] - deltaUV1[1] * edge2[0],
-    deltaUV2[1] * edge1[1] - deltaUV1[1] * edge2[1],
-    deltaUV2[1] * edge1[2] - deltaUV1[1] * edge2[2],
-  ];
-
-  const bitTangent = [
-    deltaUV1[0] * edge2[0] - deltaUV2[0] * edge1[0],
-    deltaUV1[0] * edge2[1] - deltaUV2[0] * edge1[1],
-    deltaUV1[0] * edge2[2] - deltaUV2[0] * edge1[2],
-  ];
-
-  return {
-    bitTangent: vec3.normalize([], vec3.scale([], bitTangent, f)),
-    tangent: vec3.normalize([], vec3.scale([], tangent, f))
-  }
-}
 
 function createPlaneVertex() {
   // points
@@ -134,9 +109,6 @@ function createPlaneVertex() {
   const program = playGl.createProgram(fragment, vertex);
   playGl.use(program);
 
-  // 设置基础信息
-  const viewPos = [0, 0, 5];
-
   // 创建投影相机信息
   const {width, height} = canvas.getBoundingClientRect();
 
@@ -145,46 +117,82 @@ function createPlaneVertex() {
   const model = [];
 
   mat4.perspective(perspectiveMatix, Math.PI / 6, width / height, 0.1, 100);
-  mat4.rotate(model, mat4.create(), 0, [1, 0, 0]);
+  mat4.rotate(model, mat4.create(), 0, [1, 1, 1]);
 
-  mat4.lookAt(view, viewPos, [0, 0, 0], [0, 1, 0]);
-  playGl.setUniform('view', view);
   playGl.setUniform('projection', perspectiveMatix);
   playGl.setUniform('model', model);
 
   // 创建纹理信息
-  const wall = await playGl.loadTexture('./example/normalTexture/img/brickwall.jpg', {
+  const wall = await playGl.loadTexture('./example/parallaxMapping/img/bricks2.jpg', {
     wrapS: 'REPEAT',
     wrapT: 'REPEAT'
   });
 
-  const wallNormal = await playGl.loadTexture('./example/normalTexture/img/brickwall_normal.jpg', {
+  const wallNormal = await playGl.loadTexture('./example/parallaxMapping/img/bricks2_normal.jpg', {
     wrapT: 'REPEAT',
     wrapS: 'REPEAT'
   });
 
+  const wallDeep = await playGl.loadTexture('./example/parallaxMapping/img/bricks2_disp.jpg', {
+    wrapT: 'REPEAT',
+    wrapS: 'REPEAT'
+  });
+
+  // const wall = await playGl.loadTexture('./example/parallaxMapping/img/toy_box_diffuse.png', {
+  //   wrapS: 'REPEAT',
+  //   wrapT: 'REPEAT'
+  // });
+
+  // const wallNormal = await playGl.loadTexture('./example/parallaxMapping/img/toy_box_normal.png', {
+  //   wrapT: 'REPEAT',
+  //   wrapS: 'REPEAT'
+  // });
+
+  // const wallDeep = await playGl.loadTexture('./example/parallaxMapping/img/toy_box_disp.png', {
+  //   wrapT: 'REPEAT',
+  //   wrapS: 'REPEAT'
+  // });
+
   playGl.setUniform('diffuseMap', wall);
   playGl.setUniform('normalMap', wallNormal);
+  playGl.setUniform('depthMap', wallDeep);
 
-  // 设置环境光照
+  // 设置特殊字段
+  playGl.setUniform('height_scale', 0.01);
+
   playGl.addMeshData({
     ...createPlaneVertex()
   });
-
-  // playGl.render();
 
   let time = 0;
   const radius = 1;
   function updateCamera() {
     playGl.clear();
     time++;
-    const x = Math.sin(time / 20) * radius;
-    const y = Math.cos(time / 20) * radius;
-    const lightPos = [x, y, 1];
+    const x = Math.sin(time / 50) * radius;
+    const y = Math.cos(time / 50) * radius;
+    const lightPos = [x, y, 3];
     playGl.setUniform('lightPos', lightPos);
+
+    // 设置基础信息
+    // const x1 = Math.sin(time / 50) * 1;
+    // const y1 = Math.cos(time / 50) * 1;
+    const viewPos = [2, 2, 1];
+    mat4.lookAt(view, viewPos, [0, 0, 0], [0, 1, 0]);
+    playGl.setUniform('view', view);
     playGl.render();
     requestAnimationFrame(updateCamera);
   }
 
   updateCamera();
+
+  document.onkeydown = () => {
+    // alert(1);
+    playGl.setUniform('parallax', true);
+    playGl.render();
+  }
+  document.onkeyup = () => {
+    playGl.setUniform('parallax', false);
+    playGl.render();
+  }
 })();

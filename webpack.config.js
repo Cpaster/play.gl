@@ -12,7 +12,8 @@ module.exports = {
   // entry: './example/depthTestDemo/index.ts',
   // entry: './example/depthShadow/index.ts',
   // entry: './example/pointShadow/index.ts',
-  entry: './example/normalTexture/index.ts',
+  // entry: './example/normalMapping/index.ts',
+  entry: './example/parallaxMapping/index.ts',
   module: {
     rules: [{
       test: /\.glsl$/,
