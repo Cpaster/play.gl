@@ -35,8 +35,8 @@ const canvas = document.getElementById('page');
     wrapT: 'REPEAT'
   });
 
-  // const grassTransport = await playGl.loadTexture('./example/blend/img/grass.png');
-  const windowTransportTexture = await playGl.loadTexture('./example/blend/img/window.png');
+  const grassTransport = await playGl.loadTexture('./example/blend/img/grass.png');
+  // const windowTransportTexture = await playGl.loadTexture('./example/blend/img/window.png');
 
   // plane
   const planeMesh = playGl.addMeshData({
@@ -92,8 +92,8 @@ const canvas = document.getElementById('page');
       [0, 1], [0, 0], [1, 0], [0, 1], [1, 0], [1, 1],
     ],
     uniforms: {
-      // texture1: grassTransport
-      texture1: windowTransportTexture
+      texture1: grassTransport
+      // texture1: windowTransportTexture
     },
     useBlend: true
   })

@@ -123,42 +123,42 @@ function createPlaneVertex() {
   playGl.setUniform('model', model);
 
   // 创建纹理信息
-  const wall = await playGl.loadTexture('./example/parallaxMapping/img/bricks2.jpg', {
-    wrapS: 'REPEAT',
-    wrapT: 'REPEAT'
-  });
-
-  const wallNormal = await playGl.loadTexture('./example/parallaxMapping/img/bricks2_normal.jpg', {
-    wrapT: 'REPEAT',
-    wrapS: 'REPEAT'
-  });
-
-  const wallDeep = await playGl.loadTexture('./example/parallaxMapping/img/bricks2_disp.jpg', {
-    wrapT: 'REPEAT',
-    wrapS: 'REPEAT'
-  });
-
-  // const wall = await playGl.loadTexture('./example/parallaxMapping/img/toy_box_diffuse.png', {
+  // const wall = await playGl.loadTexture('./example/parallaxMapping/img/bricks2.jpg', {
   //   wrapS: 'REPEAT',
   //   wrapT: 'REPEAT'
   // });
 
-  // const wallNormal = await playGl.loadTexture('./example/parallaxMapping/img/toy_box_normal.png', {
+  // const wallNormal = await playGl.loadTexture('./example/parallaxMapping/img/bricks2_normal.jpg', {
   //   wrapT: 'REPEAT',
   //   wrapS: 'REPEAT'
   // });
 
-  // const wallDeep = await playGl.loadTexture('./example/parallaxMapping/img/toy_box_disp.png', {
+  // const wallDeep = await playGl.loadTexture('./example/parallaxMapping/img/bricks2_disp.jpg', {
   //   wrapT: 'REPEAT',
   //   wrapS: 'REPEAT'
   // });
+
+  const wall = await playGl.loadTexture('./example/parallaxMapping/img/toy_box_diffuse.png', {
+    wrapS: 'REPEAT',
+    wrapT: 'REPEAT'
+  });
+
+  const wallNormal = await playGl.loadTexture('./example/parallaxMapping/img/toy_box_normal.png', {
+    wrapT: 'REPEAT',
+    wrapS: 'REPEAT'
+  });
+
+  const wallDeep = await playGl.loadTexture('./example/parallaxMapping/img/toy_box_disp.png', {
+    wrapT: 'REPEAT',
+    wrapS: 'REPEAT'
+  });
 
   playGl.setUniform('diffuseMap', wall);
   playGl.setUniform('normalMap', wallNormal);
   playGl.setUniform('depthMap', wallDeep);
 
   // 设置特殊字段
-  playGl.setUniform('height_scale', 0.01);
+  playGl.setUniform('height_scale', 0.02);
 
   playGl.addMeshData({
     ...createPlaneVertex()
@@ -177,7 +177,7 @@ function createPlaneVertex() {
     // 设置基础信息
     // const x1 = Math.sin(time / 50) * 1;
     // const y1 = Math.cos(time / 50) * 1;
-    const viewPos = [2, 2, 1];
+    const viewPos = [0, 0, 4];
     mat4.lookAt(view, viewPos, [0, 0, 0], [0, 1, 0]);
     playGl.setUniform('view', view);
     playGl.render();

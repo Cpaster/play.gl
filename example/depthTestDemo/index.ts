@@ -10,7 +10,6 @@ const canvas = document.getElementById('page');
 
 (async function() {
   const playGl = new PlayGL(canvas, {
-    // antialias: true,
     depth: true,
     samples: 0,
     isWebGL2: true
@@ -123,7 +122,7 @@ const canvas = document.getElementById('page');
     playGl.use(program2);
     playGl.setUniform('screenTexture', fbo.texture);
     playGl.render();
-    requestAnimationFrame(updateCamera);
+    // requestAnimationFrame(updateCamera);
   }
 
   updateCamera();

@@ -3,7 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   mode: 'development',
-  // entry: './example/blend/index.ts',
+  entry: './example/blend/index.ts',
   // entry: './demo/texture/index.ts',
   // entry: './demo/light/index.ts',
   // entry: './example/instancingQuads/index.ts',
@@ -13,7 +13,8 @@ module.exports = {
   // entry: './example/depthShadow/index.ts',
   // entry: './example/pointShadow/index.ts',
   // entry: './example/normalMapping/index.ts',
-  entry: './example/parallaxMapping/index.ts',
+  // entry: './example/parallaxMapping/index.ts',
+  // entry: './example/trigle/index.ts',
   module: {
     rules: [{
       test: /\.glsl$/,

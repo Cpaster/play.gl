@@ -122,7 +122,7 @@ export default class PlayGL {
     const {width, height} = this.canvas;
     const {depth, stencil} = options;
 
-    gl.viewport(0, 0, width, height);
+    gl.viewport(0, 0, width, height );
     gl.clearColor(0.0, 0.0, 0.0, 0.0);
     gl.clear(
       gl.COLOR_BUFFER_BIT
