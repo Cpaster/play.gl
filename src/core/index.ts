@@ -500,19 +500,30 @@ export default class PlayGL {
     if (!data) {
       throw new Error('mesh data should`t empty');
     }
-    const {positions, cells, uniforms = {}, attributes, textureCoord, useBlend, useCullFace, instanceCount } = data;
+    const {positions, cells, uniforms = {}, attributes, textureCoord, useBlend, useCullFace, instanceCount, mod } = data;
     const positionFloatArray = pointsToBuffer(positions, Float32Array);
     meshData.instanceCount = instanceCount || 0;
     meshData.position = positionFloatArray;
     meshData.useBlend = useBlend || false;
     meshData.useCullFace = useCullFace || false;
+    meshData.mod = mod || this.gl.TRIANGLES;
     
     if (uniforms) {
       meshData.uniforms = uniforms; // TODO修改其最终的样式
     }
 
     if (cells) {
-      meshData.cells = pointsToBuffer(cells, Uint16Array);
+      if ((typeof cells[0]) === 'number') {
+        meshData.cells = arrayToBuffer(
+          (cells as number[]),
+          Uint16Array
+        );
+      } else {
+        meshData.cells = pointsToBuffer(
+          cells as Array<Array<number>>, 
+          Uint16Array
+        );
+      }
       meshData.cellCount = meshData.cells?.length || 0;
     }
 
@@ -667,10 +678,10 @@ export default class PlayGL {
   }
 
   _draw() {
-    const {gl, program, mod} = this;
+    const {gl, program} = this;
 
     this.program.meshDatas.forEach(meshData => {
-      const {position, cells, cellCount, attributes, textureCoord, uniforms, useBlend, instanceCount } = meshData;
+      const {position, cells, cellCount, attributes, textureCoord, uniforms, useBlend, instanceCount, mod } = meshData;
       if (useBlend) {
         gl.enable(gl.BLEND);
       } else {
@@ -746,14 +757,13 @@ export default class PlayGL {
 
   draw(mod = this.gl.TRIANGLES) {
     this.mod = mod;
-    this.render(mod, true);
+    this.render(true);
   }
 
-  render(mod = this.gl.TRIANGLES, noClear?: boolean) {
+  render(noClear?: boolean) {
     const {gl, options, canvas} = this;
     const { samples } = options;
     const {width, height} = canvas;
-    this.mod = mod;
     if (this.frameBuffer) {
       if (samples) {
         // gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);

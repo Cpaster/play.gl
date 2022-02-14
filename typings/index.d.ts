@@ -1,5 +1,13 @@
 declare module "*.glsl";
 
+type mod = WebGLRenderingContext['TRIANGLES'] 
+| WebGLRenderingContext['POINTS'] 
+| WebGLRenderingContext['LINES']
+| WebGLRenderingContext['LINE_STRIP']
+| WebGLRenderingContext['LINE_LOOP']
+| WebGLRenderingContext['TRIANGLE_STRIP']
+| WebGLRenderingContext['TRIANGLE_FAN'];
+
 interface PlayGLOption extends WebGLContextAttributes {
   isWebGL2?: boolean;
   depth?: boolean;
@@ -28,7 +36,7 @@ interface PlayGlProgram extends WebGLProgram {
 interface createMeshDataParam {
   positions: Array<Array<number>>;
   instanceCount?: number;
-  cells?: Array<Array<number>>;
+  cells?: Array<Array<number> | number>;
   attributes?: Record<string, {
     data: Array<number[]>;
     divisor?: 0 | 1 | 2;
@@ -37,6 +45,7 @@ interface createMeshDataParam {
   textureCoord?: Array<number[]>
   useBlend?: boolean;
   useCullFace?: boolean;
+  mod?: mod;
 }
 
 interface MeshData {
@@ -44,7 +53,7 @@ interface MeshData {
   position?: Float32Array;
   cells?: Float32Array;
   cellCount?: number;
-  attributes?: Record<string, { 
+  attributes?: Record<string, {
     data: Float32Array;
     size: number;
     name: string; 
@@ -59,6 +68,7 @@ interface MeshData {
   };
   useBlend?: boolean;
   useCullFace?: boolean;
+  mod?: mod;
   setMeshUniform?: (name: string, value) => void;
 }
 

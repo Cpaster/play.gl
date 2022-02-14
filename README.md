@@ -58,13 +58,15 @@ play.gl属于自己无聊做的一个webgl的基础图形学的库，用来学�
 
 ☑️视差贴图
 
+gltf模块引入
+
 HDR
 
 泛光
 
 SSAO
 
-gltf模块引入
+PBR
 
 延时着色
 

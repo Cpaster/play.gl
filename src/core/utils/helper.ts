@@ -21,7 +21,8 @@ export const pointsToBuffer = (points: Array<Array<number>>, Type) => {
   return buffer;
 }
 
-export const arrayToBuffer = (arr: Array<number>, Type = Float32Array) => {
+export const arrayToBuffer = (arr: Array<number>, Type?: any) => {
+  Type = Type ? Type : Float32Array;
   if (!arr?.length) {
     throw new Error('points is empty');
   }
