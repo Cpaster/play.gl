@@ -24,23 +24,23 @@ const canvas = document.getElementById('page');
   playGl.use(program);
 
   const lightCluster = new LightCluster(playGl, false);
-
-  lightCluster.addPointLight({
-    position: [-4, -4, 4],
-    ambient: [0.1, 0.1, 0.1],
-    diffuse: [1.0, 1.0, 1.0],
-    specular: [1.0, 1.0, 1.0],
-    constant: 1.0,
-    linear: 0.045,
-    quadratic: 0.0075
-  });
-
-  lightCluster.addDirectionLight({
-    direction: [4, 4, 4],
-    ambient: [0.1, 0.1, 0.1],
-    diffuse: [0.8, 0.8, 0.8],
-    specular: [1.0, 1.0, 1.0]
-  });
+  const lightPos: Array<[number, number, number]> = [
+    [-10, 10, 10],
+    [10, 10, 10],
+    [-10, -10, 10],
+    [10, -10, 10]
+  ]
+  lightPos.forEach(pos => {
+    lightCluster.addPointLight({
+      position: pos,
+      ambient: [0.1, 0.1, 0.1],
+      diffuse: [1.0, 1.0, 1.0],
+      specular: [1.0, 1.0, 1.0],
+      constant: 1.0,
+      linear: 0.045,
+      quadratic: 0.0075
+    });
+  })
 
   lightCluster.add();
 
@@ -48,7 +48,7 @@ const canvas = document.getElementById('page');
 
   playGl.setUniform('projection', camera.projectionMatrix);
 
-  playGl.setUniform('materialColor', [1.0, 0.0, 0.0]);
+  playGl.setUniform('materialColor', [300.0, 300.0, 300.0]);
 
   const nrRows = 7;
   const nrCols = 7;
@@ -67,11 +67,13 @@ const canvas = document.getElementById('page');
   };
 
   const models = [];
+  const metallics = [];
+  const roughnesss = [];
 
   for (let row = 0; row < nrRows; ++row) {
-    playGl.setUniform('metallic', row / nrRows);
     for (let col = 0; col < nrCols; ++col) {
-      playGl.setUniform('roughness', clamp(col / nrCols, 0.05, 1.0));
+      metallics.push(row / nrRows);
+      roughnesss.push(clamp(col / nrCols, 0.05, 1.0));
 
       const model = [];
       mat4.translate(
@@ -82,6 +84,9 @@ const canvas = document.getElementById('page');
       models.push(model);
     }
   }
+
+  playGl.setUniform('albedo', [0.5, 0.0, 0.0]);
+  playGl.setUniform('ao', 1.0);
 
   const sphere = createSphere({
     xSegment: 64,
@@ -98,8 +103,16 @@ const canvas = document.getElementById('page');
       aNormal: {
         data: sphere.aNormal
       },
-      aInstanceMatrix: {
+      models: {
         data: models,
+        divisor: 1
+      },
+      metallics: {
+        data: metallics,
+        divisor: 1
+      },
+      roughnesss: {
+        data: roughnesss,
         divisor: 1
       }
     },
@@ -111,9 +124,9 @@ const canvas = document.getElementById('page');
     time++;
     playGl.clear();
     camera.position({
-      x: 25 * Math.sin(time * 0.01),
-      y: 0,
-      z: 25 * Math.cos(time * 0.01),
+      x: 10 * Math.sin(time * 0.01),
+      y: 10 * Math.cos(time * 0.01),
+      z: 18,
     });
 
     camera.updateCamera();

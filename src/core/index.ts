@@ -532,17 +532,16 @@ export default class PlayGL {
       Object.entries(attributes).forEach(([key, value]) => {
         const { data, divisor } = value;
         if (this.program._attribute[key]) {
-          const {size, type} = this.program._attribute[key];
-          if (data[0]?.length !== (type === 'mat' ? (size ** 2) : size)) {
-            throw new Error(`the attribute '${key}' in shader size is ${size}, but input is ${value[0]?.length}`);
-          }
+          const {type} = this.program._attribute[key];
           meshData.attributes[key] = {
             name: key,
             divisor,
             type,
-            size: data[0]?.length,
+            size: data[0]?.length || 1,
             count: data?.length || 0,
-            data: pointsToBuffer(data || [], Float32Array)
+            data: typeof data[0] === 'number' ? 
+            arrayToBuffer((data as unknown as number[]), Float32Array) : 
+              pointsToBuffer(data || [], Float32Array)
           }
         } else {
           console.warn(`the ${key} don't exist in shader !`);
