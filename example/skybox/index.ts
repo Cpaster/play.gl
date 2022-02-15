@@ -1,6 +1,8 @@
 import PlayGL from '../../src/core';
 import * as mat4 from '../../src/math/mat4';
 
+import createSphere from '../../src/geometry/sphere';
+
 import vertexShader from './vertexShader.glsl';
 import framentShader from './fragmentShader.glsl';
 import vertexSkyBoxShader from './vertexSkyShader.glsl';
@@ -63,39 +65,30 @@ const canvas = document.getElementById('page');
 
   const models = [];
   const normalModels = [];
-  for (let y = -200; y < 200; y += 2) {
-    for (let x = -200; x < 200; x += 2) {
+  for (let y = -10; y < 10; y += 2) {
+    for (let x = -10; x < 10; x += 2) {
       const model1 = mat4.rotate([], mat4.create(), x / 20, [3, 7, 0]);
-      const model = mat4.translate([], model1, [x / 10, y / 10, 0]);
+      const model = mat4.translate([], model1, [x, y, 0]);
       const normalModel = mat4.transpose([], mat4.invert(mat4.create(), model));
       models.push(model);
       normalModels.push(normalModel);
     }
   }
 
-  const positions = [
-    [-0.05, -0.05, -0.05], [0.05, -0.05, -0.05], [0.05, 0.05, -0.05], [0.05, 0.05, -0.05], [-0.05, 0.05,-0.05], [-0.05, -0.05, -0.05],
-    [-0.05, -0.05, 0.05], [0.05, -0.05, 0.05], [0.05, 0.05, 0.05], [0.05, 0.05, 0.05], [-0.05, 0.05,0.05], [-0.05, -0.05, 0.05],
-    [-0.05, 0.05, 0.05], [-0.05, 0.05, -0.05], [-0.05, -0.05, -0.05], [-0.05, -0.05, -0.05], [-0.05, -0.05,0.05], [-0.05, 0.05, 0.05],
-    [0.05, 0.05, 0.05], [0.05, 0.05, -0.05], [0.05, -0.05, -0.05], [0.05, -0.05, -0.05], [0.05, -0.05, 0.05], [0.05, 0.05, 0.05],
-    [-0.05, -0.05, -0.05], [0.05, -0.05, -0.05], [0.05, -0.05, 0.05], [0.05, -0.05, 0.05], [-0.05, -0.05,0.05], [-0.05, -0.05, -0.05],
-    [-0.05, 0.05, -0.05], [0.05, 0.05, -0.05], [0.05, 0.05, 0.05], [0.05, 0.05, 0.05], [-0.05, 0.05, 0.05], [-0.05, 0.05, -0.05]
-  ];
+  const sphere = createSphere({
+    xSegment: 64,
+    ySegment: 64
+  });
 
-  // // box
   playGl.addMeshData({
     instanceCount: models?.length,
-    positions: positions,
+    mod: playGl.glContext[sphere.mod],
+    positions: sphere.position,
+    textureCoord: sphere.textureCoord,
+    cells: sphere.cells,
     attributes: {
       aNormal: {
-        data: [
-          [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1],
-          [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1],
-          [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0],
-          [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],
-          [0, -1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0],
-          [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0]
-        ]
+        data: sphere.aNormal
       },
       aInstanceMatrix: {
         data: models,
@@ -110,6 +103,45 @@ const canvas = document.getElementById('page');
       skybox: cubeTextures
     },
   });
+
+  // const positions = [
+  //   [-0.05, -0.05, -0.05], [0.05, -0.05, -0.05], [0.05, 0.05, -0.05], [0.05, 0.05, -0.05], [-0.05, 0.05,-0.05], [-0.05, -0.05, -0.05],
+  //   [-0.05, -0.05, 0.05], [0.05, -0.05, 0.05], [0.05, 0.05, 0.05], [0.05, 0.05, 0.05], [-0.05, 0.05,0.05], [-0.05, -0.05, 0.05],
+  //   [-0.05, 0.05, 0.05], [-0.05, 0.05, -0.05], [-0.05, -0.05, -0.05], [-0.05, -0.05, -0.05], [-0.05, -0.05,0.05], [-0.05, 0.05, 0.05],
+  //   [0.05, 0.05, 0.05], [0.05, 0.05, -0.05], [0.05, -0.05, -0.05], [0.05, -0.05, -0.05], [0.05, -0.05, 0.05], [0.05, 0.05, 0.05],
+  //   [-0.05, -0.05, -0.05], [0.05, -0.05, -0.05], [0.05, -0.05, 0.05], [0.05, -0.05, 0.05], [-0.05, -0.05,0.05], [-0.05, -0.05, -0.05],
+  //   [-0.05, 0.05, -0.05], [0.05, 0.05, -0.05], [0.05, 0.05, 0.05], [0.05, 0.05, 0.05], [-0.05, 0.05, 0.05], [-0.05, 0.05, -0.05]
+  // ];
+
+  // // // box
+  // playGl.addMeshData({
+  //   mod: playGl.glContext.TRIANGLE_STRIP,
+  //   instanceCount: models?.length,
+  //   positions: positions,
+  //   attributes: {
+  //     aNormal: {
+  //       data: [
+  //         [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1],
+  //         [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1],
+  //         [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0],
+  //         [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],
+  //         [0, -1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0],
+  //         [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0]
+  //       ]
+  //     },
+  //     aInstanceMatrix: {
+  //       data: models,
+  //       divisor: 1
+  //     },
+  //     aInstanceNormalMatrix: {
+  //       data: normalModels,
+  //       divisor: 1
+  //     }
+  //   },
+  //   uniforms: {
+  //     skybox: cubeTextures
+  //   },
+  // });
   playGl.setUniform('projection', perspectiveMatix);
   let time = 0;
   const radius = 5;

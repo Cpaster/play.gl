@@ -10,14 +10,15 @@ export class PerspectiveCamera {
   private _lookAt: [number, number, number];
   projectionMatrix: Array<number>  = [];
   viewMatrix: Array<number> = [];
-  constructor(fov: number, aspect: number, far: number, near: number) {
+  constructor(fov: number, aspect: number, near: number, far: number) {
     this._position = [0, 0, 0];
     this._up = [0, 1, 0];
-    this._lookAt = [0, 0, -1];
+    this._lookAt = [0, 0, 0];
     this._fov = fov;
     this._aspect = aspect;
     this._far = far || 1000;
-    this._near = near || 1;
+    this._near = near || 0.1;
+    this.updateCamera();
   }
 
   position(param: {
@@ -53,7 +54,7 @@ export class PerspectiveCamera {
 
   updateCamera() {
     const projection = [];
-    const view = []
+    const view = [];
     mat4.perspective(projection, this._fov, this._aspect, this._near, this._far);
     mat4.lookAt(view, this._position, this._lookAt, this._up);
     this.projectionMatrix = projection;

@@ -738,9 +738,9 @@ export default class PlayGL {
       }
       if (!!instanceCount) {
         if (cells) {
-          (gl as WebGL2RenderingContext).drawElementsInstanced(gl.TRIANGLES, cellCount, gl.UNSIGNED_SHORT, 0, instanceCount);
+          (gl as WebGL2RenderingContext).drawElementsInstanced(mod, cellCount, gl.UNSIGNED_SHORT, 0, instanceCount);
         } else {
-          (gl as WebGL2RenderingContext).drawArraysInstanced(gl.TRIANGLES, 0, position.length / program._dimension, instanceCount);
+          (gl as WebGL2RenderingContext).drawArraysInstanced(mod, 0, position.length / program._dimension, instanceCount);
         }
         locations.forEach((location) => {
           (gl as WebGL2RenderingContext).vertexAttribDivisor(location, null);
