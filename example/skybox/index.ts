@@ -65,8 +65,8 @@ const canvas = document.getElementById('page');
 
   const models = [];
   const normalModels = [];
-  for (let y = -10; y < 10; y += 2) {
-    for (let x = -10; x < 10; x += 2) {
+  for (let y = -20; y < 20; y += 2) {
+    for (let x = -20; x < 20; x += 2) {
       const model1 = mat4.rotate([], mat4.create(), x / 20, [3, 7, 0]);
       const model = mat4.translate([], model1, [x, y, 0]);
       const normalModel = mat4.transpose([], mat4.invert(mat4.create(), model));
@@ -103,48 +103,10 @@ const canvas = document.getElementById('page');
       skybox: cubeTextures
     },
   });
-
-  // const positions = [
-  //   [-0.05, -0.05, -0.05], [0.05, -0.05, -0.05], [0.05, 0.05, -0.05], [0.05, 0.05, -0.05], [-0.05, 0.05,-0.05], [-0.05, -0.05, -0.05],
-  //   [-0.05, -0.05, 0.05], [0.05, -0.05, 0.05], [0.05, 0.05, 0.05], [0.05, 0.05, 0.05], [-0.05, 0.05,0.05], [-0.05, -0.05, 0.05],
-  //   [-0.05, 0.05, 0.05], [-0.05, 0.05, -0.05], [-0.05, -0.05, -0.05], [-0.05, -0.05, -0.05], [-0.05, -0.05,0.05], [-0.05, 0.05, 0.05],
-  //   [0.05, 0.05, 0.05], [0.05, 0.05, -0.05], [0.05, -0.05, -0.05], [0.05, -0.05, -0.05], [0.05, -0.05, 0.05], [0.05, 0.05, 0.05],
-  //   [-0.05, -0.05, -0.05], [0.05, -0.05, -0.05], [0.05, -0.05, 0.05], [0.05, -0.05, 0.05], [-0.05, -0.05,0.05], [-0.05, -0.05, -0.05],
-  //   [-0.05, 0.05, -0.05], [0.05, 0.05, -0.05], [0.05, 0.05, 0.05], [0.05, 0.05, 0.05], [-0.05, 0.05, 0.05], [-0.05, 0.05, -0.05]
-  // ];
-
-  // // // box
-  // playGl.addMeshData({
-  //   mod: playGl.glContext.TRIANGLE_STRIP,
-  //   instanceCount: models?.length,
-  //   positions: positions,
-  //   attributes: {
-  //     aNormal: {
-  //       data: [
-  //         [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1],
-  //         [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1],
-  //         [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0],
-  //         [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],
-  //         [0, -1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0],
-  //         [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0]
-  //       ]
-  //     },
-  //     aInstanceMatrix: {
-  //       data: models,
-  //       divisor: 1
-  //     },
-  //     aInstanceNormalMatrix: {
-  //       data: normalModels,
-  //       divisor: 1
-  //     }
-  //   },
-  //   uniforms: {
-  //     skybox: cubeTextures
-  //   },
-  // });
+  
   playGl.setUniform('projection', perspectiveMatix);
   let time = 0;
-  const radius = 5;
+  const radius = 20;
   const {gl} = playGl;
   playGl.setBlockUniformValue('Matrices', {
     projection: perspectiveMatix
@@ -153,10 +115,10 @@ const canvas = document.getElementById('page');
     time++;
     const view = [];
     playGl.clear();
-    const x = Math.sin(time / 200) * radius;
+    const x = Math.sin(time / 400) * radius;
     const z = Math.cos(time / 400) * radius;
-    const y = Math.sin(time / 100) * radius;
-    const cameraPos = [x, y, z];
+    // const y = Math.sin(time / 100) * radius;
+    const cameraPos = [x, 0, z];
     mat4.lookAt(view, cameraPos, [0, 0, 0], [0, 1, 0]);
     playGl.use(program);
     playGl.setUniform('view', view);

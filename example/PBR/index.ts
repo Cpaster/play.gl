@@ -44,7 +44,7 @@ const canvas = document.getElementById('page');
 
   lightCluster.add();
 
-  const camera = new PerspectiveCamera(Math.PI / 3, width / height, 0.1, 1000);
+  const camera = new PerspectiveCamera(Math.PI / 2.7, width / height, 0.1, 1000);
 
   playGl.setUniform('projection', camera.projectionMatrix);
 
@@ -124,9 +124,9 @@ const canvas = document.getElementById('page');
     time++;
     playGl.clear();
     camera.position({
-      x: 10 * Math.sin(time * 0.01),
-      y: 10 * Math.cos(time * 0.01),
-      z: 18,
+      x: 15 * Math.sin(time * 0.01),
+      y: 0,
+      z: 15 * Math.cos(time * 0.01),
     });
 
     camera.updateCamera();

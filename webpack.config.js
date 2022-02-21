@@ -16,7 +16,8 @@ module.exports = {
   // entry: './example/parallaxMapping/index.ts',
   // entry: './example/trigle/index.ts',
   // entry: './example/lightCluster/index.ts',
-  entry: './example/PBR/index.ts',
+  // entry: './example/PBR/index.ts',
+  entry: './example/PBRWithTexture/index.ts',
   module: {
     rules: [{
       test: /\.glsl$/,
