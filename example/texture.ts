@@ -20,7 +20,9 @@ const canvas = document.getElementById('page');
     // }
   })
 
-  const wallTexture = await playGl.loadTexture('./demo/img/wall.jpg')
+  // const wallTexture = await playGl.loadTexture('./example/common/img/snowPhoto.hdr');
+  const wallTexture = await playGl.loadTexture('./example/common/img/box.jpg');
+  console.log(wallTexture);
   playGl.setUniform('wall', wallTexture);
 
 })()

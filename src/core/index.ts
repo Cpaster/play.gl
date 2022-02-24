@@ -1,4 +1,4 @@
-import { pointsToBuffer, createProgram, loadImage, arrayToBuffer, isType } from './utils/helper';
+import { pointsToBuffer, createProgram, loadImage, arrayToBuffer, isType, getHDR } from './utils/helper';
 import DEFAULT_VERTEX from './defaultVertexShader.glsl';
 import DEFAULT_FRAGMENT from './defaultFragmentShader.glsl';
 
@@ -109,6 +109,7 @@ export default class PlayGL {
     
     gl.getExtension('WEBGL_depth_texture');
     gl.getExtension('EXT_frag_depth');
+    gl.getExtension('OES_texture_float');
     // gl.getExtension('EXT_shader_io_blocks');
     // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -406,10 +407,16 @@ export default class PlayGL {
       };
       const textures = await Promise.all(
         (typeof src === 'string' ? [src] : src)?.map((s: string) => {
-          return loadImage(s, options.isFlipY)
+          if (s.match(/.hdr$/)) {
+            return getHDR(s, {
+              responseType: 'arraybuffer'
+            });
+          } else {
+            return loadImage(s, options.isFlipY)
+          }
         })
       );
-
+      // console.log(textures);
       if (textures.length) {
         const textureType = textures.length > 1 ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D;
         return this.createTexture(
@@ -442,7 +449,13 @@ export default class PlayGL {
         gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img[i]);
       }
     } else {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img[0]);
+      if (img[0]?.pixels && img[0].width && img[0].height) {
+        // hdr texture
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, img[0].width, img[0].height, 0, gl.RGBA, gl.FLOAT, img[0].pixels);
+      } else {
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.FLOAT, img[0]);
+      }
+      // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.FLOAT, img[0]);
     }
 
     // if (isCubeTexture) {
@@ -579,18 +592,20 @@ export default class PlayGL {
 
     const textureBuffer = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, textureBuffer);
+    for (let i = 0; i < 6; i++) {
+      gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,  gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, textureBuffer, 0);
+    }
+
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+
     const frameBuffer: PlayGLFrameBuffer = gl.createFramebuffer();
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-    for (let i = 0; i < 6; i++) {
-      gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-      gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-      // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,  gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, textureBuffer, 0);
-    }
     let depthBuffer = gl.createRenderbuffer();
     gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer);
     gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, width, height);
@@ -778,7 +793,7 @@ export default class PlayGL {
         if (this.frameBuffer.isCubeBox && this.frameBuffer.faceId < 6) {
           const {texture, faceId} = this.frameBuffer;
           gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,  gl.TEXTURE_CUBE_MAP_POSITIVE_X + faceId, texture, 0);
-          this.frameBuffer.faceId += 1;
+          this.frameBuffer.faceId = faceId + 1;
         }
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
           console.error('framebuffer create fail');

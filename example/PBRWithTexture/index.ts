@@ -62,8 +62,8 @@ const canvas = document.getElementById('page');
 
   playGl.setUniform('materialColor', [300.0, 300.0, 300.0]);
 
-  const nrRows = 7;
-  const nrCols = 7;
+  const nrRows = 1;
+  const nrCols = 1;
   const space = 2.5;
 
   const models = [];

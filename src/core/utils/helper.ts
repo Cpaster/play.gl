@@ -1,3 +1,4 @@
+import parseHDR2RGB from './hdr';
 export const isType = (type: string, v: any) => {
   return Object.prototype.toString.call(v) === `[object ${type}]`
 }
@@ -75,11 +76,13 @@ export const loadImage = (src: string, isFlipY?: boolean) => {
       && !/^data:/.test(src)) {
       img.crossOrigin = 'anonymous';
     }
+
     imagesCache[src] = new Promise((resolve) => {
       img.onload = () => {
         if (typeof createImageBitmap === 'function') {
           const option: any = isFlipY === false ? {} : { imageOrientation: 'flipY' };
           createImageBitmap(img, option).then((bitmap) => {
+            console.log(bitmap);
             imagesCache[src] = bitmap;
             resolve(bitmap);
           })
@@ -92,4 +95,42 @@ export const loadImage = (src: string, isFlipY?: boolean) => {
     })
   }
   return imagesCache[src];
+}
+
+export const getHDR = function(url: string, options) {
+  if (!imagesCache[url]) {
+    imagesCache[url] = new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+  
+      xhr.open('get', url);
+      xhr.responseType = options.responseType || 'text';
+  
+      if (options.onprogress) {
+          xhr.onprogress = function(e) {
+              if (e.lengthComputable) {
+                  var percent = e.loaded / e.total;
+                  options.onprogress(percent, e.loaded, e.total);
+              }
+              else {
+                  options.onprogress(null);
+              }
+          };
+      }
+  
+      xhr.onload = function(e) {
+          if (xhr.status >= 400) {
+            reject('error');
+          }
+          else {
+            const texture = parseHDR2RGB(xhr.response);
+            console.log(texture);
+            resolve(texture);
+          }
+      };
+  
+      xhr.send(null);
+    })
+  }
+
+  return imagesCache[url];
 }
