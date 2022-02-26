@@ -123,7 +123,6 @@ export const getHDR = function(url: string, options) {
           }
           else {
             const texture = parseHDR2RGB(xhr.response);
-            console.log(texture);
             resolve(texture);
           }
       };

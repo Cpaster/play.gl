@@ -131,7 +131,7 @@ const canvas = document.getElementById('page');
     
     gl.depthFunc(gl.LEQUAL);
     playGl.use(program2);
-    const a = mat4.fromMat4([], view);
+    const a = mat4.fromMat4ToMat3([], view);
     const b = mat4.toMat4([], a);
     playGl.setUniform('view', b);
     playGl.draw();

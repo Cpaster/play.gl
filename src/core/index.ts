@@ -416,7 +416,6 @@ export default class PlayGL {
           }
         })
       );
-      // console.log(textures);
       if (textures.length) {
         const textureType = textures.length > 1 ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D;
         return this.createTexture(
@@ -430,7 +429,7 @@ export default class PlayGL {
   }
 
   createTexture(textureType, img, options: TextureParams) {
-    const {gl} = this;
+    const {gl,} = this;
     const isCubeTexture = textureType === gl.TEXTURE_CUBE_MAP;
     this._max_texture_image_units = gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
     gl.activeTexture(gl.TEXTURE0 + this._max_texture_image_units - 1);
@@ -451,9 +450,13 @@ export default class PlayGL {
     } else {
       if (img[0]?.pixels && img[0].width && img[0].height) {
         // hdr texture
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, img[0].width, img[0].height, 0, gl.RGBA, gl.FLOAT, img[0].pixels);
+        if (this.options.isWebGL2) {
+          gl.texImage2D(gl.TEXTURE_2D, 0, (gl as WebGL2RenderingContext).RGBA16F, img[0].width, img[0].height, 0, gl.RGBA, gl.FLOAT, img[0].pixels);
+        } else {
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, img[0].width, img[0].height, 0, gl.RGBA, gl.FLOAT, img[0].pixels);
+        }
       } else {
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.FLOAT, img[0]);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img[0]);
       }
       // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.FLOAT, img[0]);
     }
@@ -581,11 +584,11 @@ export default class PlayGL {
     return meshData;
   }
 
-  createTextureCubeFrameBuffer(fbOpt: {
+  createTextureCubeFrameBuffer(fbOpt?: {
     width?: number;
     height?: number;
   }) {
-    let { width, height } = fbOpt;
+    let { width, height } = fbOpt || {};
     const {gl, canvas} = this;
     width = width || canvas.width;
     height = height || canvas.height;
@@ -599,8 +602,8 @@ export default class PlayGL {
 
     gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
 
     const frameBuffer: PlayGLFrameBuffer = gl.createFramebuffer();

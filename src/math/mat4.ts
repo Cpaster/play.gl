@@ -3,7 +3,7 @@ export let ARRAY_TYPE =
 
 export const EPSILON = 0.000001;
 
-export function fromMat4(out, a) {
+export function fromMat4ToMat3(out, a) {
   out[0] = a[0];
   out[1] = a[1];
   out[2] = a[2];

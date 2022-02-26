@@ -29,7 +29,7 @@ const canvas = document.getElementById('page');
     [10, 10, 10],
     [-10, -10, 10],
     [10, -10, 10]
-  ]
+  ];
   lightPos.forEach(pos => {
     lightCluster.addPointLight({
       position: pos,

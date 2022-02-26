@@ -11,28 +11,46 @@ function createCube(params?: CubeParams) {
   const zS = zSize / 2;
 
   let position = [
-    [-xS, -yS, -zS], [xS, -yS, -zS], [xS, yS, -zS], [xS, yS, -zS], [-xS, yS,-zS], [-xS, -yS, -zS],
+    // back
+    [-xS, -yS, -zS], [xS, yS, -zS], [xS, -yS, zS], [xS, yS, -zS], [-xS, -yS,-zS], [-xS, yS, -zS],
+    // front
     [-xS, -yS, zS], [xS, -yS, zS], [xS, yS, zS], [xS, yS, zS], [-xS, yS, zS], [-xS, -yS, zS],
+    // left
     [-xS, yS, zS], [-xS, yS, -zS], [-xS, -yS, -zS], [-xS, -yS, -zS], [-xS, -yS, zS], [-xS, yS, zS],
-    [xS, yS, zS], [xS, yS, -zS], [xS, -yS, -zS], [xS, -yS, -zS], [xS, -yS, zS], [xS, yS, zS],
+    // right
+    [xS, yS, zS], [xS, -yS, -zS], [xS, yS, -zS], [xS, -yS, -zS], [xS, yS, zS], [xS, -yS, zS],
+    // bottom
     [-xS, -yS, -zS], [xS, -yS, -zS], [xS, -yS, zS], [xS, -yS, zS], [-xS, -yS, zS], [-xS, -yS, -zS],
-    [-xS, yS, -zS], [xS, yS, -zS], [xS, yS, zS], [xS, yS, zS], [-xS, yS, zS], [-xS, yS, -zS]
+    // top
+    [-xS, yS, -zS], [xS, yS, zS], [xS, yS, -zS], [xS, yS, zS], [-xS, yS, -zS], [-xS, yS, zS]
   ];
 
   let uv = [
+    // back
+    [0, 0], [1, 1], [1, 0], [1, 1], [0, 0], [0, 1],
+    // front
     [0, 0], [1, 0], [1, 1], [1, 1], [0, 1], [0, 0],
-    [0, 0], [1, 0], [1, 1], [1, 1], [0, 1], [0, 0],
+    // left
     [1, 0], [1, 1], [0, 1], [0, 1], [0, 0], [1, 0],
-    [1, 0], [1, 1], [0, 1], [0, 1], [0, 0], [1, 0],
+    // right
+    [1, 0], [0, 1], [1, 1], [0, 1], [1, 0], [0, 0],
+    // bottom
     [0, 1], [1, 1], [1, 0], [1, 0], [0, 0], [0, 1],
-    [0, 1], [1, 1], [1, 0], [1, 0], [0, 0], [0, 1]
+    // top
+    [0, 1], [1, 0], [1, 1], [1, 0], [0, 1], [0, 0]
   ];
   let normals = [
+    // back
     [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1],
+    // front
     [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1],
+    // left
     [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0],
+    // right
     [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],
+    // bottom
     [0, -1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0], [0 ,-1, 0],
+    // top
     [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0]
   ];  
 

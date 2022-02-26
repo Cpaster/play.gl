@@ -70,6 +70,8 @@ SSAO
 
 ☑️PBR
 
+IBL
+
 延时着色
 
 ### math方法

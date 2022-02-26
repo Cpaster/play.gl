@@ -7,7 +7,9 @@ import framentShader from './fragmentShader.glsl';
 const canvas = document.getElementById('page');
 
 (async function() {
-  const playGl = new PlayGL(canvas);
+  const playGl = new PlayGL(canvas, {
+    isWebGL2: true
+  });
 
   playGl.clear();
 
