@@ -25,6 +25,8 @@ uniform PointLight pointLight[4];
 uniform DirectionLight directionLight[1];
 uniform vec3 viewPosition;
 
+uniform samplerCube irradianceMap;
+
 uniform vec3 albedo;
 uniform float ao;
 
@@ -155,7 +157,13 @@ void main() {
     Lo += (kD * albedo / PI + specular) * radiance * NdotL;
   }
 
-  vec3 ambient = vec3(0.03) * albedo * ao;
+  vec3 kS = fresnelSchlick(max(dot(N, V), 0.0), F0);
+  vec3 kD = 1.0 - kS;
+  kD *= 1.0 - metallic;
+
+  vec3 irradiance = texture(irradianceMap, N).rgb;
+  vec3 diffuse = irradiance * albedo;
+  vec3 ambient = (kD * diffuse) * ao;
 
   vec3 color = ambient + Lo;
 

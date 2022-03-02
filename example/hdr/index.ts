@@ -17,33 +17,17 @@ import backgroundFramentShader from './backgroud/fragment.glsl';
 import pbrVertexShader from './pbr/vertexShader.glsl';
 import pbrFramentShader from './pbr/fragmentShader.glsl';
 
+import convolutionFramentShader from './convolution/fragmentShader.glsl';
+
 const canvas = document.getElementById('page');
 
-function addCube(playGl, size) {
-  const cube = createCube({
-    xSize: size,
-    ySize: size,
-    zSize: size
-  });
-  
-  playGl.addMeshData({
-    positions: cube.position,
-    textureCoord: cube.textureCoord,
-    cells: cube.cells,
-  });
-}
 
-const { width, height } = canvas.getBoundingClientRect();
-
-async function createCubeMap(playGl: PlayGL) {
-
-
-  const caputreViews = [
-    {
-      position: [0, 0, 0],
-      target: [1, 0, 0],
-      up: [0, -1, 0]
-    }, 
+const caputreViews = [
+  {
+    position: [0, 0, 0],
+    target: [1, 0, 0],
+    up: [0, -1, 0]
+  }, 
   {
     position: [0, 0, 0],
     target: [-1, 0, 0],
@@ -67,7 +51,25 @@ async function createCubeMap(playGl: PlayGL) {
   }
 ];
 
-  const hdrTexture = await playGl.loadTexture('./example/hdr/img/snowPhoto.hdr', {
+function addCube(playGl, size) {
+  const cube = createCube({
+    xSize: size,
+    ySize: size,
+    zSize: size
+  });
+  
+  playGl.addMeshData({
+    positions: cube.position,
+    textureCoord: cube.textureCoord,
+    cells: cube.cells,
+  });
+}
+
+const { width, height } = canvas.getBoundingClientRect();
+
+async function createCubeMap(playGl: PlayGL) {
+
+  const hdrTexture = await playGl.loadTexture('./example/hdr/img/Brooklyn_Bridge_Planks_2k.hdr', {
     minFilter: 'LINEAR',
     magFilter: 'LINEAR',
     isFlipY: true
@@ -83,6 +85,8 @@ async function createCubeMap(playGl: PlayGL) {
   const camera = new PerspectiveCamera(Math.PI / 2, 1.0, 0.1, 20);
   playGl.setUniform('equirectangularMap', hdrTexture);
   playGl.setUniform('projection', camera.projectionMatrix);
+
+  addCube(playGl, 2);
   caputreViews.forEach(view => {
     const { target, up } = view;
     camera.lookAt({
@@ -98,7 +102,6 @@ async function createCubeMap(playGl: PlayGL) {
     camera.updateCamera();
     playGl.setUniform('view', camera.viewMatrix);
 
-    addCube(playGl, 2);
     playGl.render();
   });
   playGl.setDefaultFBO();
@@ -121,7 +124,7 @@ function createEnvCube(playGl: PlayGL, texture, camera) {
   };
 }
 
-function createPBRScene(playGl: PlayGL, camera) {
+function createPBRScene(playGl: PlayGL, cubeMapTexture, camera) {
   const pbrProgram = playGl.createProgram(pbrFramentShader, pbrVertexShader);
   playGl.use(pbrProgram);
   const lightCluster = new LightCluster(playGl, false);
@@ -145,6 +148,8 @@ function createPBRScene(playGl: PlayGL, camera) {
   })
 
   lightCluster.add();
+
+  playGl.setUniform('irradianceMap', cubeMapTexture);
 
   playGl.setUniform('projection', camera.projectionMatrix);
 
@@ -185,7 +190,7 @@ function createPBRScene(playGl: PlayGL, camera) {
     }
   }
 
-  playGl.setUniform('albedo', [0.5, 0.0, 0.0]);
+  playGl.setUniform('albedo', [1, 0, 0]);
   playGl.setUniform('ao', 1.0);
 
   const sphere = createSphere({
@@ -223,6 +228,42 @@ function createPBRScene(playGl: PlayGL, camera) {
   };
 }
 
+function createDiffuseCubeMap (playGl: PlayGL, cubeMapTexture) {
+  const diffuseProgram = playGl.createProgram(convolutionFramentShader, vertexShader);
+
+  playGl.use(diffuseProgram);
+
+  const cubeMapFBO = playGl.createTextureCubeFrameBuffer();
+  
+  playGl.bindFBO(cubeMapFBO);
+
+  const camera = new PerspectiveCamera(Math.PI / 2, 1.0, 0.1, 20);
+  console.log(cubeMapTexture);
+  playGl.setUniform('environmentMap', cubeMapTexture);
+  playGl.setUniform('projection', camera.projectionMatrix);
+
+  addCube(playGl, 2);
+  caputreViews.forEach(view => {
+    const { target, up } = view;
+    camera.lookAt({
+      x: target[0],
+      y: target[1],
+      z: target[2]
+    });
+    camera.up({
+      x: up[0],
+      y: up[1],
+      z: up[2]
+    });
+    camera.updateCamera();
+    playGl.setUniform('view', camera.viewMatrix);
+
+    playGl.render();
+  });
+  playGl.setDefaultFBO();
+  return cubeMapFBO.texture;
+}
+
 (async function() {
   const playGl = new PlayGL(canvas, {
     isWebGL2: true,
@@ -235,7 +276,11 @@ function createPBRScene(playGl: PlayGL, camera) {
   const camera = new PerspectiveCamera(Math.PI / 2, width / height, 0.1, 100);
 
   const envContext = createEnvCube(playGl, cubeMapTexture, camera);
-  const pbrContext = createPBRScene(playGl, camera);
+
+  const diffuseCubeMap = await createDiffuseCubeMap(playGl, cubeMapTexture);
+  console.log(diffuseCubeMap);
+  
+  const pbrContext = createPBRScene(playGl, diffuseCubeMap, camera);
 
   let time = 0;
 
