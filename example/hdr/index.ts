@@ -69,7 +69,7 @@ const { width, height } = canvas.getBoundingClientRect();
 
 async function createCubeMap(playGl: PlayGL) {
 
-  const hdrTexture = await playGl.loadTexture('./example/hdr/img/Brooklyn_Bridge_Planks_2k.hdr', {
+  const hdrTexture = await playGl.loadTexture('./example/hdr/img/WinterForest_Ref.hdr', {
     minFilter: 'LINEAR',
     magFilter: 'LINEAR',
     isFlipY: true
@@ -124,7 +124,7 @@ function createEnvCube(playGl: PlayGL, texture, camera) {
   };
 }
 
-function createPBRScene(playGl: PlayGL, cubeMapTexture, camera) {
+function createPBRScene(playGl: PlayGL, diffuseCubeMap, camera) {
   const pbrProgram = playGl.createProgram(pbrFramentShader, pbrVertexShader);
   playGl.use(pbrProgram);
   const lightCluster = new LightCluster(playGl, false);
@@ -149,7 +149,7 @@ function createPBRScene(playGl: PlayGL, cubeMapTexture, camera) {
 
   lightCluster.add();
 
-  playGl.setUniform('irradianceMap', cubeMapTexture);
+  playGl.setUniform('irradianceMap', diffuseCubeMap);
 
   playGl.setUniform('projection', camera.projectionMatrix);
 
@@ -238,7 +238,7 @@ function createDiffuseCubeMap (playGl: PlayGL, cubeMapTexture) {
   playGl.bindFBO(cubeMapFBO);
 
   const camera = new PerspectiveCamera(Math.PI / 2, 1.0, 0.1, 20);
-  console.log(cubeMapTexture);
+
   playGl.setUniform('environmentMap', cubeMapTexture);
   playGl.setUniform('projection', camera.projectionMatrix);
 
@@ -260,6 +260,7 @@ function createDiffuseCubeMap (playGl: PlayGL, cubeMapTexture) {
 
     playGl.render();
   });
+
   playGl.setDefaultFBO();
   return cubeMapFBO.texture;
 }
@@ -275,12 +276,11 @@ function createDiffuseCubeMap (playGl: PlayGL, cubeMapTexture) {
   const cubeMapTexture = await createCubeMap(playGl);
   const camera = new PerspectiveCamera(Math.PI / 2, width / height, 0.1, 100);
 
-  const envContext = createEnvCube(playGl, cubeMapTexture, camera);
-
   const diffuseCubeMap = await createDiffuseCubeMap(playGl, cubeMapTexture);
-  console.log(diffuseCubeMap);
   
   const pbrContext = createPBRScene(playGl, diffuseCubeMap, camera);
+
+  const envContext = createEnvCube(playGl, cubeMapTexture, camera);
 
   let time = 0;
 
@@ -299,6 +299,7 @@ function createDiffuseCubeMap (playGl: PlayGL, cubeMapTexture) {
     playGl.use(pbrContext.program);
     playGl.setUniform('view', camera.viewMatrix);
     playGl.setUniform('viewPosition', camera.cameraPosition);
+    playGl.setUniform('irradianceMap', diffuseCubeMap);
     playGl.draw();
 
     const gl = playGl.glContext;
@@ -308,6 +309,7 @@ function createDiffuseCubeMap (playGl: PlayGL, cubeMapTexture) {
     const mat3Views = mat4.fromMat4ToMat3([], camera.viewMatrix);
     const Mat4Views = mat4.toMat4([], mat3Views);
     playGl.setUniform('view', Mat4Views);
+    playGl.setUniform('environmentMap', cubeMapTexture);
 
     playGl.draw();
     gl.depthFunc(gl.LESS);
