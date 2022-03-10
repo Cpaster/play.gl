@@ -7,6 +7,7 @@ import * as mat4 from '../../src/math/mat4';
 
 import createCube from '../../src/geometry/cube';
 import createSphere from '../../src/geometry/sphere';
+import createQuadratic from '../../src/geometry/quadratic';
 
 import vertexShader from './equirectangular/vertex.glsl';
 import framentShader from './equirectangular/fragment.glsl';
@@ -18,6 +19,11 @@ import pbrVertexShader from './pbr/vertexShader.glsl';
 import pbrFramentShader from './pbr/fragmentShader.glsl';
 
 import convolutionFramentShader from './convolution/fragmentShader.glsl';
+
+import prefilterCubFramentShader from './prefilter/fragmentShader.glsl';
+
+import brdfVertexShader from './brdf/vertexShader.glsl';
+import brdfFragmentShader from './brdf/fragmentShader.glsl';
 
 const canvas = document.getElementById('page');
 
@@ -65,11 +71,23 @@ function addCube(playGl, size) {
   });
 }
 
+function addQuad(playGl) {
+  const quad = createQuadratic({
+    width: 2,
+    height: 2
+  });
+  playGl.addMeshData({
+    positions: quad.position,
+    textureCoord: quad.textureCoord,
+    cells: quad.cells,
+  });
+}
+
 const { width, height } = canvas.getBoundingClientRect();
 
 async function createCubeMap(playGl: PlayGL) {
 
-  const hdrTexture = await playGl.loadTexture('./example/hdr/img/WinterForest_Ref.hdr', {
+  const hdrTexture = await playGl.loadTexture('./example/hdr/img/Brooklyn_Bridge_Planks_2k.hdr', {
     minFilter: 'LINEAR',
     magFilter: 'LINEAR',
     isFlipY: true
@@ -190,7 +208,7 @@ function createPBRScene(playGl: PlayGL, diffuseCubeMap, camera) {
     }
   }
 
-  playGl.setUniform('albedo', [1, 0, 0]);
+  playGl.setUniform('albedo', [1, 1, 1]);
   playGl.setUniform('ao', 1.0);
 
   const sphere = createSphere({
@@ -265,6 +283,71 @@ function createDiffuseCubeMap (playGl: PlayGL, cubeMapTexture) {
   return cubeMapFBO.texture;
 }
 
+function createBrdfLUTTexture(playGl: PlayGL) {
+  const gl = playGl.glContext;
+  const brdfProgram = playGl.createProgram(brdfFragmentShader, brdfVertexShader);
+  playGl.use(brdfProgram);
+  const textureFBO = playGl.createFrameBuffer();
+  addQuad(playGl);
+  playGl.bindFBO(textureFBO);
+  // const { renderBuffer } = textureFBO;
+  // gl.bindRenderbuffer(gl.RENDERBUFFER, renderBuffer);
+  // gl.renderbufferStorage(gl.RENDERBUFFER, (gl as WebGL2RenderingContext).DEPTH_COMPONENT24, 512, 512);
+  gl.viewport(0, 0, 512, 512);
+  playGl.render();
+  playGl.setDefaultFBO();
+  return textureFBO.texture;
+}
+
+function createPrefilterMap(playGl: PlayGL, envMapTexture) {
+  const gl = playGl.glContext;
+  const prefilterMapProgram = playGl.createProgram(prefilterCubFramentShader, vertexShader);
+  playGl.use(prefilterMapProgram);
+  const cubeMapFBO = playGl.createTextureCubeFrameBuffer();
+
+  playGl.bindFBO(cubeMapFBO);
+
+  const camera = new PerspectiveCamera(Math.PI / 2, 1.0, 0.1, 20);
+
+  playGl.setUniform('environmentMap', envMapTexture);
+  playGl.setUniform('projection', camera.projectionMatrix);
+  const renderBuffer = cubeMapFBO.renderBuffer;
+
+  const mipMapLevel = 5;
+  addCube(playGl, 2);
+  gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER, cubeMapFBO);
+  for (let level = 0; level < mipMapLevel; level++) {
+    const width = 128 * Math.pow(0.5, level);
+    const height = 128 * Math.pow(0.5, level);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, renderBuffer);
+    gl.renderbufferStorage(gl.RENDERBUFFER, (gl as WebGL2RenderingContext).DEPTH_COMPONENT24, width, height);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+    gl.viewport(0, 0, width, height);
+    const roughness = level / (mipMapLevel - 1);
+    playGl.setUniform('roughness', roughness);
+    caputreViews.forEach(view => {
+      const { target, up } = view;
+      camera.lookAt({
+        x: target[0],
+        y: target[1],
+        z: target[2]
+      });
+      camera.up({
+        x: up[0],
+        y: up[1],
+        z: up[2]
+      });
+      camera.updateCamera();
+      playGl.setUniform('view', camera.viewMatrix);
+      playGl.render();
+    });
+  }
+  playGl.setDefaultFBO();
+  return cubeMapFBO.texture;
+}
+
 (async function() {
   const playGl = new PlayGL(canvas, {
     isWebGL2: true,
@@ -277,6 +360,10 @@ function createDiffuseCubeMap (playGl: PlayGL, cubeMapTexture) {
   const camera = new PerspectiveCamera(Math.PI / 2, width / height, 0.1, 100);
 
   const diffuseCubeMap = await createDiffuseCubeMap(playGl, cubeMapTexture);
+
+  const prefilterCubMap = createPrefilterMap(playGl, cubeMapTexture);
+
+  const brdfLUTTexture = createBrdfLUTTexture(playGl);
   
   const pbrContext = createPBRScene(playGl, diffuseCubeMap, camera);
 
@@ -300,6 +387,8 @@ function createDiffuseCubeMap (playGl: PlayGL, cubeMapTexture) {
     playGl.setUniform('view', camera.viewMatrix);
     playGl.setUniform('viewPosition', camera.cameraPosition);
     playGl.setUniform('irradianceMap', diffuseCubeMap);
+    playGl.setUniform('prefilterMap', prefilterCubMap);
+    playGl.setUniform('brdfLUT', brdfLUTTexture);
     playGl.draw();
 
     const gl = playGl.glContext;

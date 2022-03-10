@@ -82,6 +82,7 @@ interface TextureParams {
 
 interface PlayGLFrameBuffer extends WebGLFramebuffer {
   texture?: WebGLTexture;
+  renderBuffer?: WebGLRenderbuffer;
   colorFrame?: WebGLFramebuffer;
   isCubeBox?: boolean;
   faceId?: number;

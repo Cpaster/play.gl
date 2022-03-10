@@ -89,3 +89,7 @@ IBL
 根据在场景中添加的光源值去计算GLSL中的值
 
 shadow acne问题的解决及原理https://www.zhihu.com/question/321779117
+
+### Bug
+在hdr文件中，多个program之间的纹理切换感觉有问题
+
