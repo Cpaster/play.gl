@@ -107,6 +107,7 @@ export default class PlayGL {
       gl.enable(gl.STENCIL_TEST);
     }
     
+    // gl.getExtension('WEBGL_compressed_texture_astc');
     gl.getExtension('WEBGL_depth_texture');
     gl.getExtension('EXT_frag_depth');
     gl.getExtension('OES_texture_float');
@@ -587,14 +588,16 @@ export default class PlayGL {
   createTextureCubeFrameBuffer(fbOpt?: {
     width?: number;
     height?: number;
+    closeRenderBuffer?: boolean;
   }) {
-    let { width, height } = fbOpt || {};
+    let { width, height, closeRenderBuffer = false } = fbOpt || {};
     const {gl, canvas} = this;
     width = width || canvas.width;
     height = height || canvas.height;
 
     const textureBuffer = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, textureBuffer);
+    // gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
     for (let i = 0; i < 6; i++) {
       gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
       // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,  gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, textureBuffer, 0);
@@ -602,16 +605,18 @@ export default class PlayGL {
 
     gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     const frameBuffer: PlayGLFrameBuffer = gl.createFramebuffer();
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
     let depthBuffer = gl.createRenderbuffer();
-    gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer);
-    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, width, height);
-    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, depthBuffer);
+    if (!closeRenderBuffer) {
+      gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer);
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, width, height);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, depthBuffer);
+    }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     frameBuffer.renderBuffer = depthBuffer;
     frameBuffer.texture = textureBuffer;
@@ -775,10 +780,16 @@ export default class PlayGL {
 
   draw(mod = this.gl.TRIANGLES) {
     this.mod = mod;
-    this.render(true);
+    this.render({
+      noClear: true
+    });
   }
 
-  render(noClear?: boolean) {
+  render(params: {
+    noClear?: boolean;
+    mipLevel?: number;
+  } = {}) {
+    const { noClear = false, mipLevel = 0 } = params;
     const {gl, options, canvas} = this;
     const { samples } = options;
     const {width, height} = canvas;
@@ -796,7 +807,7 @@ export default class PlayGL {
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
         if (this.frameBuffer.isCubeBox && this.frameBuffer.faceId < 6) {
           const {texture, faceId} = this.frameBuffer;
-          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,  gl.TEXTURE_CUBE_MAP_POSITIVE_X + faceId, texture, 0);
+          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,  gl.TEXTURE_CUBE_MAP_POSITIVE_X + faceId, texture, mipLevel || 0);
           this.frameBuffer.faceId = faceId + 1;
         }
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {

@@ -32,7 +32,7 @@ function createQuad(params?: QuadParams) {
     position,
     textureCoord: uv,
     aNormal: normals,
-    cells: null,
+    cells: [[0, 1, 2], [1, 3, 2]],
     mod: 'TRIANGLE'
   }
 }

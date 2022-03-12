@@ -87,7 +87,7 @@ const { width, height } = canvas.getBoundingClientRect();
 
 async function createCubeMap(playGl: PlayGL) {
 
-  const hdrTexture = await playGl.loadTexture('./example/hdr/img/Brooklyn_Bridge_Planks_2k.hdr', {
+  const hdrTexture = await playGl.loadTexture('./example/hdr/img/Snow_Bg.jpg', {
     minFilter: 'LINEAR',
     magFilter: 'LINEAR',
     isFlipY: true
@@ -303,7 +303,9 @@ function createPrefilterMap(playGl: PlayGL, envMapTexture) {
   const gl = playGl.glContext;
   const prefilterMapProgram = playGl.createProgram(prefilterCubFramentShader, vertexShader);
   playGl.use(prefilterMapProgram);
-  const cubeMapFBO = playGl.createTextureCubeFrameBuffer();
+  const cubeMapFBO = playGl.createTextureCubeFrameBuffer({
+    closeRenderBuffer: true
+  });
 
   playGl.bindFBO(cubeMapFBO);
 
@@ -318,7 +320,7 @@ function createPrefilterMap(playGl: PlayGL, envMapTexture) {
   gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, cubeMapFBO);
-  for (let level = 0; level < mipMapLevel; level++) {
+  for (let level = 0; level < 1; level++) {
     const width = 128 * Math.pow(0.5, level);
     const height = 128 * Math.pow(0.5, level);
     gl.bindRenderbuffer(gl.RENDERBUFFER, renderBuffer);
