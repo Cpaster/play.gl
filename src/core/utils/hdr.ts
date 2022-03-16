@@ -152,6 +152,7 @@ export default function parseHDR2RGB(arrayBuffer, exposure:number = 0): any | vo
     type: 5126,
     width,
     height,
-    pixels
+    pixels,
+    isHDR: true
   };
 }

@@ -87,7 +87,7 @@ const { width, height } = canvas.getBoundingClientRect();
 
 async function createCubeMap(playGl: PlayGL) {
 
-  const hdrTexture = await playGl.loadTexture('./example/hdr/img/Snow_Bg.jpg', {
+  const hdrTexture = await playGl.loadTexture('./example/ibl/img/Brooklyn_Bridge_Planks_2k.hdr', {
     minFilter: 'LINEAR',
     magFilter: 'LINEAR',
     isFlipY: true

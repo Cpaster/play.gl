@@ -449,7 +449,7 @@ export default class PlayGL {
         gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img[i]);
       }
     } else {
-      if (img[0]?.pixels && img[0].width && img[0].height) {
+      if (img?.[0]?.isHDR) {
         // hdr texture
         if (this.options.isWebGL2) {
           gl.texImage2D(gl.TEXTURE_2D, 0, (gl as WebGL2RenderingContext).RGBA16F, img[0].width, img[0].height, 0, gl.RGBA, gl.FLOAT, img[0].pixels);
