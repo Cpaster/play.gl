@@ -1,4 +1,4 @@
-import { pointsToBuffer, createProgram, loadImage, arrayToBuffer, isType, getHDR } from './utils/helper';
+import { pointsToBuffer, createProgram, loadImage, arrayToBuffer, isType, getHDR, getProto } from './utils/helper';
 import DEFAULT_VERTEX from './defaultVertexShader.glsl';
 import DEFAULT_FRAGMENT from './defaultFragmentShader.glsl';
 
@@ -48,6 +48,7 @@ export default class PlayGL {
   _max_texture_image_units: number;
   frameBuffer: PlayGLFrameBuffer;
   programs: PlayGlProgram[] = [];
+  _bindTexturesLen: number = 0;
   // cubeFrameBuffers: PlayGLFrameBuffer[];
   blockUniforms: Record<
     string,
@@ -112,8 +113,8 @@ export default class PlayGL {
     gl.getExtension('EXT_frag_depth');
     gl.getExtension('OES_texture_float');
     // gl.getExtension('EXT_shader_io_blocks');
-    // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    // gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     // 面剔除
     // gl.frontFace(gl.CW);
   }
@@ -342,8 +343,8 @@ export default class PlayGL {
 
     if (/^sampler/.test(type)) {
       const targetType = type === 'samplerCube' ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D;
-      const idx = program._samplerMap[name] ? program._samplerMap[name] : program._bindTextures?.length;
-      program._bindTextures[idx] = v;
+      const idx = this._bindTexturesLen;
+      this._bindTexturesLen++;
       gl.activeTexture(gl.TEXTURE0 + idx);
       gl.bindTexture(targetType, v);
       if (!program._samplerMap[name]) {
@@ -396,7 +397,7 @@ export default class PlayGL {
     return this.program._uniform[name].value || '';
   }
 
-  async loadTexture(src: string | string[], options?:TextureParams) {
+  async loadTexture(src: string | string[] | HTMLCanvasElement, options?:TextureParams) {
     const {gl} = this;
     if (src) {
       options = {
@@ -406,17 +407,22 @@ export default class PlayGL {
         magFilter: 'LINEAR',
         ...options
       };
-      const textures = await Promise.all(
-        (typeof src === 'string' ? [src] : src)?.map((s: string) => {
-          if (s.match(/.hdr$/)) {
-            return getHDR(s, {
-              responseType: 'arraybuffer'
-            });
-          } else {
-            return loadImage(s, options.isFlipY)
-          }
-        })
-      );
+      let textures;
+      if (getProto(src, 'HTMLCANVASELEMENT')) {
+        textures = [src];
+      } else {
+        textures = await Promise.all(
+          ((typeof src === 'string' ? [src] : src) as string[])?.map((s: string) => {
+            if (s.match(/.hdr$/)) {
+              return getHDR(s, {
+                responseType: 'arraybuffer'
+              });
+            } else {
+              return loadImage(s, options.isFlipY)
+            }
+          })
+        );
+      }
       if (textures.length) {
         const textureType = textures.length > 1 ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D;
         return this.createTexture(
@@ -430,7 +436,7 @@ export default class PlayGL {
   }
 
   createTexture(textureType, img, options: TextureParams) {
-    const {gl,} = this;
+    const {gl} = this;
     const isCubeTexture = textureType === gl.TEXTURE_CUBE_MAP;
     this._max_texture_image_units = gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
     gl.activeTexture(gl.TEXTURE0 + this._max_texture_image_units - 1);
@@ -702,8 +708,7 @@ export default class PlayGL {
 
   _draw() {
     const {gl, program} = this;
-
-    this.program.meshDatas.forEach(meshData => {
+    program.meshDatas.forEach(meshData => {
       const {position, cells, cellCount, attributes, textureCoord, uniforms, useBlend, instanceCount, mod } = meshData;
       if (useBlend) {
         gl.enable(gl.BLEND);

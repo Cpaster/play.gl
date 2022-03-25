@@ -27,7 +27,6 @@ import brdfFragmentShader from './brdf/fragmentShader.glsl';
 
 const canvas = document.getElementById('page');
 
-
 const caputreViews = [
   {
     position: [0, 0, 0],
