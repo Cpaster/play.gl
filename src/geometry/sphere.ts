@@ -41,7 +41,7 @@ function createSphere(params: SphereParams) {
 
   return {
     position,
-    textureCoord: uv,
+    textureCoord: uv.reverse(),
     aNormal: normals,
     cells: cells,
     mod: 'TRIANGLE_STRIP'

@@ -133,3 +133,7 @@ export const getHDR = function(url: string, options) {
 
   return imagesCache[url];
 }
+
+export const getProto = function (v: unknown, type: string) {
+  return Object.prototype.toString.call(v).toUpperCase() === `[OBJECT ${type?.toUpperCase()}]`;
+}

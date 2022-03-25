@@ -18,7 +18,8 @@ module.exports = {
   // entry: './example/lightCluster/index.ts',
   // entry: './example/PBR/index.ts',
   // entry: './example/PBRWithTexture/index.ts',
-  entry: './example/ibl/index.ts',
+  // entry: './example/ibl/index.ts',
+  entry: './example/addFont/index.ts',
   // entry: './example/texture/index.ts',
   module: {
     rules: [{
