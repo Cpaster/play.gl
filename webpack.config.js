@@ -19,7 +19,8 @@ module.exports = {
   // entry: './example/PBR/index.ts',
   // entry: './example/PBRWithTexture/index.ts',
   // entry: './example/ibl/index.ts',
-  entry: './example/addFont/index.ts',
+  // entry: './example/addFont/index.ts',
+  entry: './example/particle/index.ts',
   // entry: './example/texture/index.ts',
   module: {
     rules: [{
