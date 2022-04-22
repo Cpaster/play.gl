@@ -6,6 +6,21 @@ import framentShader from './fragmentShader.glsl';
 
 const canvas = document.getElementById('page');
 
+function randomRGData(size_x, size_y) {
+  let d = [];
+  for (let i = 0; i < size_x * size_y; ++i) {
+   d.push(Math.random() * 255.0);
+   d.push(Math.random() * 255.0);
+  //  d.push(Math.random() * 255.0);
+  //  d.push(255.0);
+  }
+  return {
+    pixels: new Uint8Array(d),
+    width: size_x,
+    height: size_y
+  };
+ }
+
 (async function() {
   const playGl = new PlayGL(canvas, {
     isWebGL2: true
@@ -46,11 +61,22 @@ const canvas = document.getElementById('page');
   mat4.rotate(model, mat4.create(), Math.PI / 4, [1, 1, 0]);
 
   // const wallTexture = await playGl.loadTexture('./example/common/img/wall.jpg')
-  const wallTexture = await playGl.loadTexture('./example/common/img/snowPhoto.hdr', {
+  // const wallTexture = await playGl.loadTexture('./example/common/img/snowPhoto.hdr', {
+  //   minFilter: 'NEAREST',
+  //   magFilter: 'NEAREST',
+  // });
+
+  const textureData = randomRGData(512, 512);
+  const gl = playGl.glContext;
+  const texture = playGl.createTexture(gl.TEXTURE_2D, [textureData], {
+    wrapS: 'MIRRORED_REPEAT',
+    wrapT: 'MIRRORED_REPEAT',
     minFilter: 'NEAREST',
     magFilter: 'NEAREST',
+    format: 'RG'
   });
-  playGl.setUniform('wall', wallTexture);
+
+  playGl.setUniform('wall', texture);
 
   playGl.setUniform('projection', perspectiveMatix);
   playGl.setUniform('model', model);

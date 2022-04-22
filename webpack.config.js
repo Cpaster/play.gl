@@ -20,8 +20,9 @@ module.exports = {
   // entry: './example/PBRWithTexture/index.ts',
   // entry: './example/ibl/index.ts',
   // entry: './example/addFont/index.ts',
-  entry: './example/particle/index.ts',
+  // entry: './example/particle/index.ts',
   // entry: './example/texture/index.ts',
+  entry: './example/particle_webgl2/index.ts',
   module: {
     rules: [{
       test: /\.glsl$/,

@@ -34,7 +34,9 @@ export const arrayToBuffer = (arr: Array<number>, Type?: any) => {
   return buffer;
 }
 
-export const createProgram = (gl: WebGLRenderingContext, vertexCode: string, fragmentCode: string): WebGLProgram => {
+export const createProgram = (
+  gl: WebGLRenderingContext, vertexCode: string, fragmentCode: string, transform_feedback_varyings
+): WebGLProgram => {
   const vertexShader = gl.createShader(gl.VERTEX_SHADER);
   gl.shaderSource(vertexShader, vertexCode);
   gl.compileShader(vertexShader);
@@ -56,6 +58,13 @@ export const createProgram = (gl: WebGLRenderingContext, vertexCode: string, fra
     const program = gl.createProgram();
     gl.attachShader(program, vertexShader);
     gl.attachShader(program, fragmentShader);
+    if (transform_feedback_varyings) {
+      if (transform_feedback_varyings != null) {
+        (gl as WebGL2RenderingContext).transformFeedbackVaryings(
+          program, transform_feedback_varyings, (gl as WebGL2RenderingContext).INTERLEAVED_ATTRIBS
+        );
+      }
+    }
     gl.linkProgram(program);
     
     if(!gl.getProgramParameter(program, gl.LINK_STATUS)) {

@@ -40,6 +40,13 @@ const attachmentMap = {
   }
 }
 
+const textureFormatMap = {
+  'RG': {
+    format: 'RG',
+    internalFormat: 'RG8'
+  }
+}
+
 export default class PlayGL {
   canvas: HTMLCanvasElement;
   mod: number;
@@ -119,14 +126,19 @@ export default class PlayGL {
     // gl.frontFace(gl.CW);
   }
 
-  clear() {
+  clear(clearOpt?: {
+    color?: Array<number>;
+    width?: number;
+    height?: number;
+  }) {
+    const {color, width: optWidth, height: optHeight} = clearOpt || {};
     const { gl, options } = this;
     //FRAMEBUFFER_SRGB
     const {width, height} = this.canvas;
     const {depth, stencil} = options;
 
-    gl.viewport(0, 0, width, height );
-    gl.clearColor(0.0, 0.0, 0.0, 0.0);
+    gl.viewport(0, 0, optWidth || width, optHeight || height );
+    gl.clearColor(color[0] || 0.0, color[1] ||0.0, color[2] || 0.0, color[3] || 0.0);
     gl.clear(
       gl.COLOR_BUFFER_BIT
       | (depth ? this.gl.DEPTH_BUFFER_BIT : 0)
@@ -134,15 +146,38 @@ export default class PlayGL {
     );
   }
 
-  createProgram(fragmentCode:string = DEFAULT_FRAGMENT, vertexCode: string = DEFAULT_VERTEX) {
+  setTransformFeedbackVarying(program, transform_feedback_varyings) {
+    const { gl , options} = this;
+    const { isWebGL2 } = options;
+    if (!isWebGL2) {
+      return ;
+    }
+    if (transform_feedback_varyings != null) {
+      (gl as WebGL2RenderingContext).transformFeedbackVaryings(
+        program, transform_feedback_varyings, (gl as WebGL2RenderingContext).INTERLEAVED_ATTRIBS
+      );
+    }
+  }
+
+  createProgram(
+    fragmentCode:string = DEFAULT_FRAGMENT, 
+    vertexCode: string = DEFAULT_VERTEX,
+    options?: {
+      transform_feedback_varyings?: String[];
+      setAttributeBuffer?: boolean;
+    }
+  ) {
+    const {setAttributeBuffer = true, transform_feedback_varyings} = options || {};
     const { gl } = this;
 
-    const program: PlayGlProgram = createProgram(gl, vertexCode, fragmentCode);
-    // this.program = program;
+    const program: PlayGlProgram = createProgram(gl, vertexCode, fragmentCode, transform_feedback_varyings);
 
     program._buffers = {};
     program._attribute = {};
     program.meshDatas = [];
+    program._uniform = {};
+    program._samplerMap = {};
+    program._bindTextures = [];
 
     const pattern = new RegExp(`(?:attribute|in) vec(\\d) ${this.options.vertexPositionName}`, 'im');
     let matched = vertexCode.match(pattern);
@@ -157,23 +192,25 @@ export default class PlayGL {
 
     const texCoordPattern = new RegExp(`(?:attribute|in) vec(\\d) ${this.options.vertexTextuseCoordsName}`, 'im');
     matched = vertexCode.match(texCoordPattern);
-    if(matched) {
+    if (matched) {
       program._texCoordSize = Number(matched[1]);
     }
 
-    const attributePattern = /^\s*(?:attribute|in) (\w+?)(\d*) (\w+)/gim;
-    matched = vertexCode.match(attributePattern);
-    if(matched) {
-      for (let i = 0; i < matched?.length; i++) {
-        const patt = /^\s*(?:attribute|in) (\w+?)(\d*) (\w+)/im;
-        const _matched = matched[i].match(patt);
-        if (_matched && ![this.options.vertexPositionName, this.options.vertexTextuseCoordsName].includes(_matched[3])) {
-          let [, type, size, name] = _matched;
-          program._buffers[name] = gl.createBuffer();
-          program._attribute[name] = {
-            size: Number(size || 1),
-            name,
-            type: type as ('mat' | 'vec')
+    if (setAttributeBuffer) {
+      const attributePattern = /^\s*(?:attribute|in) (\w+?)(\d*) (\w+)/gim;
+      matched = vertexCode.match(attributePattern);
+      if(matched) {
+        for (let i = 0; i < matched?.length; i++) {
+          const patt = /^\s*(?:attribute|in) (\w+?)(\d*) (\w+)/im;
+          const _matched = matched[i].match(patt);
+          if (_matched && ![this.options.vertexPositionName, this.options.vertexTextuseCoordsName].includes(_matched[3])) {
+            let [, type, size, name] = _matched;
+            program._buffers[name] = gl.createBuffer();
+            program._attribute[name] = {
+              size: Number(size || 1),
+              name,
+              type: type as ('mat' | 'vec')
+            }
           }
         }
       }
@@ -187,9 +224,6 @@ export default class PlayGL {
        * https://developer.mozilla.org/zh-CN/docs/Web/API/WebGL2RenderingContext/uniform
        * https://developer.mozilla.org/zh-CN/docs/Web/API/WebGL2RenderingContext/uniformMatrix
       **/
-    program._uniform = {};
-    program._samplerMap = {};
-    program._bindTextures = [];
     matched?.forEach((m): void => {
       const _matched = m.match(/^\s*uniform\s+(\w+)\s+(\w+)(\[\d+\])?/);
       let [type, name, isVector] = _matched.splice(1);
@@ -224,7 +258,6 @@ export default class PlayGL {
         }
       }
     });
-
 
     const uniformBlockPattern = /^layout\s*\(std140\)\s*uniform\s+(\w+)\s*\n*\s*{\s*\n*\s*((((\w)\s*\[*\]*)+);\s*\n*\s*)+\s*\n*\s*}/mg;
     matched = vertexCode.match(uniformBlockPattern);
@@ -380,7 +413,7 @@ export default class PlayGL {
   setUniform(name: string, v) {
     const { program } = this;
 
-    Object.entries(program._uniform).forEach(([key, typeValue]) => {
+    Object.entries(program?._uniform).forEach(([key, typeValue]) => {
       const { type } = typeValue;
       if (key === name) {
         this._setUniform(name, type, v);
@@ -462,15 +495,16 @@ export default class PlayGL {
         } else {
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, img[0].width, img[0].height, 0, gl.RGBA, gl.FLOAT, img[0].pixels);
         }
+      } else if (options.format) {
+        const textureForamt = textureFormatMap[options.format];
+        const { width, height, pixels } = img[0];
+        gl.texImage2D(
+          gl.TEXTURE_2D, 0, gl[textureForamt?.internalFormat], width, height, 0, gl[textureForamt?.format], gl.UNSIGNED_BYTE, pixels
+        );
       } else {
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img[0]);
       }
-      // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.FLOAT, img[0]);
     }
-
-    // if (isCubeTexture) {
-    //   gl.texParameteri(textureType, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
-    // }
 
     gl.texParameteri(textureType, gl.TEXTURE_WRAP_S, this.gl[options.wrapS]);
     gl.texParameteri(textureType, gl.TEXTURE_WRAP_T, this.gl[options.wrapT]);
@@ -486,20 +520,25 @@ export default class PlayGL {
     const { gl, options } = this;
     
     gl.useProgram(program);
-    
-    gl.bindBuffer(gl.ARRAY_BUFFER, program._buffers.vertexBuffer);
+    if (program?._buffers?.vertexBuffer) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, program._buffers.vertexBuffer);
+    }
     const vPosition = gl.getAttribLocation(program, options.vertexPositionName);
-    gl.vertexAttribPointer(vPosition, program._dimension, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(vPosition);
-
-    if (program._buffers.textCoordBuffer) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, program._buffers.textCoordBuffer);
-      const location = gl.getAttribLocation(program, options.vertexTextuseCoordsName);
-      gl.vertexAttribPointer(location, program._texCoordSize, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(location);
+    if (vPosition > -1) {
+      gl.vertexAttribPointer(vPosition, program._dimension, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(vPosition);
     }
 
-    Object.entries(program._attribute).forEach(([key, value]): void => {
+    if (program?._buffers?.textCoordBuffer) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, program._buffers.textCoordBuffer);
+      const location = gl.getAttribLocation(program, options.vertexTextuseCoordsName);
+      if (location > -1) {
+        gl.vertexAttribPointer(location, program._texCoordSize, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(location);
+      }
+    }
+
+    Object.entries(program?._attribute || {}).forEach(([key, value]): void => {
       const {size, name, type} = value;
       gl.bindBuffer(gl.ARRAY_BUFFER, this.program._buffers[name]);
       const location = gl.getAttribLocation(program, name);
@@ -515,6 +554,47 @@ export default class PlayGL {
         }
       }
     })
+  }
+
+  createBuffer(data) {
+    const { gl } = this;
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STREAM_DRAW);
+    return buffer;
+  }
+
+  addBufferVAO(buffer, attribs, options?: any) {
+    const { gl, program } = this;
+    const { typeSize = 4 } = options || {};
+    const vao = (gl as WebGL2RenderingContext).createVertexArray();
+    (gl as WebGL2RenderingContext).bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    let offset = 0;
+    for (let attrib_name in attribs) {
+      if (attribs.hasOwnProperty(attrib_name)) {
+        let attrib = attribs[attrib_name];
+        const location = gl.getAttribLocation(program, attrib_name);
+        gl.enableVertexAttribArray(location);
+        gl.vertexAttribPointer(
+          location,
+          attrib?.dimension,
+          gl[attrib?.type],
+          false,
+          attrib?.stride,
+          offset
+        );
+        offset += attrib?.dimension * typeSize;
+
+        if (attrib.hasOwnProperty('divisor')) {
+          (gl as WebGL2RenderingContext).vertexAttribDivisor(location, attrib?.divisor);
+        }
+      }
+    }
+    (gl as WebGL2RenderingContext).bindVertexArray(null);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    
+    return vao;
   }
 
   addMeshData(data: createMeshDataParam) {
@@ -554,7 +634,7 @@ export default class PlayGL {
       meshData.attributes = {};
       Object.entries(attributes).forEach(([key, value]) => {
         const { data, divisor } = value;
-        if (this.program._attribute[key]) {
+        if (this.program?._attribute[key]) {
           const {type} = this.program._attribute[key];
           meshData.attributes[key] = {
             name: key,
@@ -580,7 +660,7 @@ export default class PlayGL {
     }
 
     meshData.setMeshUniform = (name: string, val) => {
-      Object.entries(program._uniform).forEach(([key]) => {
+      Object.entries(program?._uniform).forEach(([key]) => {
         if (name === key || new RegExp(`^${key}$`).test(name)) {
           meshData.uniforms[name] = val;
         }
@@ -707,19 +787,16 @@ export default class PlayGL {
   }
 
   _draw() {
-    const {gl, program} = this;
+    const {gl, program, mod: defaultMod} = this;
     program.meshDatas.forEach(meshData => {
-      const {position, cells, cellCount, attributes, textureCoord, uniforms, useBlend, instanceCount, mod } = meshData;
+      const {
+        position, cells, cellCount, attributes, textureCoord, uniforms, useBlend, instanceCount, mod = defaultMod 
+      } = meshData;
       if (useBlend) {
         gl.enable(gl.BLEND);
       } else {
         gl.disable(gl.BLEND);
       }
-      // if (useCullFace) {
-      //   gl.enable(gl.CULL_FACE);
-      // } else {
-      //   gl.disable(gl.CULL_FACE);
-      // }
       gl.bindBuffer(gl.ARRAY_BUFFER, program._buffers.vertexBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, position, gl.STATIC_DRAW);
 
@@ -819,7 +896,6 @@ export default class PlayGL {
           console.error('framebuffer create fail');
         }
       }
-      // gl.disable(gl.DEPTH_TEST);
     }
 
     if (!noClear) {
