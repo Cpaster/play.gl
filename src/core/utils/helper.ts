@@ -91,7 +91,6 @@ export const loadImage = (src: string, isFlipY?: boolean) => {
         if (typeof createImageBitmap === 'function') {
           const option: any = isFlipY === false ? {} : { imageOrientation: 'flipY' };
           createImageBitmap(img, option).then((bitmap) => {
-            console.log(bitmap);
             imagesCache[src] = bitmap;
             resolve(bitmap);
           })

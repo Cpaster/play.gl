@@ -44,6 +44,10 @@ const textureFormatMap = {
   'RG': {
     format: 'RG',
     internalFormat: 'RG8'
+  },
+  'RGB': {
+    format: 'RGB',
+    internalFormat: 'RGB8'
   }
 }
 
@@ -564,33 +568,35 @@ export default class PlayGL {
     return buffer;
   }
 
-  addBufferVAO(buffer, attribs, options?: any) {
+  addBufferVAO(buffers) {
     const { gl, program } = this;
-    const { typeSize = 4 } = options || {};
     const vao = (gl as WebGL2RenderingContext).createVertexArray();
     (gl as WebGL2RenderingContext).bindVertexArray(vao);
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    let offset = 0;
-    for (let attrib_name in attribs) {
-      if (attribs.hasOwnProperty(attrib_name)) {
-        let attrib = attribs[attrib_name];
-        const location = gl.getAttribLocation(program, attrib_name);
-        gl.enableVertexAttribArray(location);
-        gl.vertexAttribPointer(
-          location,
-          attrib?.dimension,
-          gl[attrib?.type],
-          false,
-          attrib?.stride,
-          offset
-        );
-        offset += attrib?.dimension * typeSize;
-
-        if (attrib.hasOwnProperty('divisor')) {
-          (gl as WebGL2RenderingContext).vertexAttribDivisor(location, attrib?.divisor);
+    buffers.forEach(b => {
+      const { buffer, attribs, typeSize } = b;
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      let offset = 0;
+      for (let attrib_name in attribs) {
+        if (attribs.hasOwnProperty(attrib_name)) {
+          let attrib = attribs[attrib_name];
+          const location = gl.getAttribLocation(program, attrib_name);
+          gl.enableVertexAttribArray(location);
+          gl.vertexAttribPointer(
+            location,
+            attrib?.dimension,
+            gl[attrib?.type],
+            false,
+            attrib?.stride,
+            offset
+          );
+          offset += attrib?.dimension * typeSize;
+  
+          if (attrib.hasOwnProperty('divisor')) {
+            (gl as WebGL2RenderingContext).vertexAttribDivisor(location, attrib?.divisor);
+          }
         }
       }
-    }
+    });
     (gl as WebGL2RenderingContext).bindVertexArray(null);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
     
