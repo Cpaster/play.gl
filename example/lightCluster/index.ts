@@ -91,6 +91,7 @@ const canvas = document.getElementById('page');
   playGl.setUniform('material.diffuse', diffuseTexture);
   playGl.setUniform('material.specular', specularTexture);
   playGl.setUniform('material.shininess', 32.0);
+  playGl.setUniform('materialColor', [1.0, 0.0, 0.0]);
 
   const cubePositions: Array<Array<number>> = [
     [0, 0, 0],

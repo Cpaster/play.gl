@@ -60,6 +60,8 @@ play.gl属于自己无聊做的一个webgl的基础图形学的库，用来学�
 
 gltf模块引入
 
+obj模型引入
+
 ☑️HDR图片加载器
 
 HDR
@@ -79,6 +81,10 @@ SSAO
 加载文字
 
 支持picking
+
+动画
+
+蒙皮实现
 
 frog
 

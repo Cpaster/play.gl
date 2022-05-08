@@ -135,7 +135,7 @@ export default class PlayGL {
     width?: number;
     height?: number;
   }) {
-    const {color, width: optWidth, height: optHeight} = clearOpt || {};
+    const {color = [], width: optWidth, height: optHeight} = clearOpt || {};
     const { gl, options } = this;
     //FRAMEBUFFER_SRGB
     const {width, height} = this.canvas;
@@ -422,6 +422,8 @@ export default class PlayGL {
       if (key === name) {
         this._setUniform(name, type, v);
       } else if (new RegExp(`^${key}$`).test(name)) {
+        this._setUniform(name, type, v);
+      } else {
         this._setUniform(name, type, v);
       }
       if (this.options.autoUpdate) {

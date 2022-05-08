@@ -284,7 +284,7 @@ function render(playGl: PlayGL, state, timestamp_millis) {
     particlesNum: 10000,
     birthRate: 0.5,
     lifeRange: [0,8, 0.9],
-    directionRange: [ - Math.PI, Math.PI],
+    directionRange: [ - Math.PI, Math.PI / 2],
     speedRange: [0.1, 0.5],
     gravity: [0.0, -0.0]
   });

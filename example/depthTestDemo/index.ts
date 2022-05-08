@@ -122,7 +122,7 @@ const canvas = document.getElementById('page');
     playGl.use(program2);
     playGl.setUniform('screenTexture', fbo.texture);
     playGl.render();
-    // requestAnimationFrame(updateCamera);
+    requestAnimationFrame(updateCamera);
   }
 
   updateCamera();

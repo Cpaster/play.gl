@@ -122,22 +122,6 @@ function createPlaneVertex() {
   playGl.setUniform('projection', perspectiveMatix);
   playGl.setUniform('model', model);
 
-  // 创建纹理信息
-  // const wall = await playGl.loadTexture('./example/parallaxMapping/img/bricks2.jpg', {
-  //   wrapS: 'REPEAT',
-  //   wrapT: 'REPEAT'
-  // });
-
-  // const wallNormal = await playGl.loadTexture('./example/parallaxMapping/img/bricks2_normal.jpg', {
-  //   wrapT: 'REPEAT',
-  //   wrapS: 'REPEAT'
-  // });
-
-  // const wallDeep = await playGl.loadTexture('./example/parallaxMapping/img/bricks2_disp.jpg', {
-  //   wrapT: 'REPEAT',
-  //   wrapS: 'REPEAT'
-  // });
-
   const wall = await playGl.loadTexture('./example/parallaxMapping/img/toy_box_diffuse.png', {
     wrapS: 'REPEAT',
     wrapT: 'REPEAT'

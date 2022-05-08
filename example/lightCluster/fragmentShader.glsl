@@ -41,6 +41,7 @@ struct SpotLight {
 uniform int directionNumber;
 uniform int pointLightNumber;
 uniform int spotLightNumber;
+uniform vec3 materialColor;
 
 uniform Material material;
 uniform DirectionLight directionLight[10];

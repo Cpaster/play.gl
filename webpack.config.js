@@ -22,7 +22,8 @@ module.exports = {
   // entry: './example/addFont/index.ts',
   // entry: './example/particle/index.ts',
   // entry: './example/texture/index.ts',
-  entry: './example/particle_webgl2/index.ts',
+  // entry: './example/particle_webgl2/index.ts',
+  entry: './example/skins/index.ts',
   module: {
     rules: [{
       test: /\.glsl$/,
