@@ -78,7 +78,8 @@ interface TextureParams {
   minFilter?: 'NEAREST' | 'LINEAR' | 'LINEAR_MIPMAP_LINEAR' | 'NEAREST_MIPMAP_NEAREST' | 'LINEAR_MIPMAP_NEAREST' | 'NEAREST_MIPMAP_LINEAR';
   magFilter?: 'NEAREST' | 'LINEAR' | 'LINEAR_MIPMAP_LINEAR' | 'NEAREST_MIPMAP_NEAREST' | 'LINEAR_MIPMAP_NEAREST' | 'NEAREST_MIPMAP_LINEAR';
   isFlipY?: boolean;
-  format?: 'RG' | "RGB"
+  format?: 'RG' | "RGB" | "RGBA";
+  type?: 'FLOAT' | 'UNSIGNED_BYTE'
 }
 
 interface PlayGLFrameBuffer extends WebGLFramebuffer {

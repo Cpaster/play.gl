@@ -5,16 +5,23 @@ in vec4 weight;
 
 uniform mat4 projection;
 uniform mat4 view;
-uniform mat4 bones[4];
+uniform sampler2D boneMatrixTexture;
+
+mat4 getBoneMatrix(int boneNdx) {
+  return mat4(
+    texelFetch(boneMatrixTexture, ivec2(0, boneNdx), 0),
+    texelFetch(boneMatrixTexture, ivec2(1, boneNdx), 0),
+    texelFetch(boneMatrixTexture, ivec2(2, boneNdx), 0),
+    texelFetch(boneMatrixTexture, ivec2(3, boneNdx), 0));
+}
 
 void main() {
   vec4 iPosition = vec4(a_vertexPosition, 1.0);
   gl_Position = projection * view *
     (
-      bones[int(boneNdx[0])] * iPosition * weight[0] +
-      bones[int(boneNdx[1])] * iPosition * weight[1] +
-      bones[int(boneNdx[2])] * iPosition * weight[2] +
-      bones[int(boneNdx[3])] * iPosition * weight[3]
+      getBoneMatrix(int(boneNdx[0])) * iPosition * weight[0] +
+      getBoneMatrix(int(boneNdx[1])) * iPosition * weight[1] +
+      getBoneMatrix(int(boneNdx[2])) * iPosition * weight[2] +
+      getBoneMatrix(int(boneNdx[3])) * iPosition * weight[3]
     );
-  // gl_Position = projection * view * iPosition;
 }

@@ -48,6 +48,10 @@ const textureFormatMap = {
   'RGB': {
     format: 'RGB',
     internalFormat: 'RGB8'
+  },
+  'RGBA': {
+    format: 'RGBA',
+    internalFormat: 'RGBA32F',
   }
 }
 
@@ -59,7 +63,8 @@ export default class PlayGL {
   _max_texture_image_units: number;
   frameBuffer: PlayGLFrameBuffer;
   programs: PlayGlProgram[] = [];
-  _bindTexturesLen: number = 0;
+  _bindTexturesLen: number = 1;
+  _textureActionIdMaps: Record<string, string> = {};
   // cubeFrameBuffers: PlayGLFrameBuffer[];
   blockUniforms: Record<
     string,
@@ -381,8 +386,13 @@ export default class PlayGL {
     if (/^sampler/.test(type)) {
       const targetType = type === 'samplerCube' ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D;
       const idx = this._bindTexturesLen;
-      this._bindTexturesLen++;
-      gl.activeTexture(gl.TEXTURE0 + idx);
+      if (!this._textureActionIdMaps[name]) {
+        this._textureActionIdMaps[name] = `${idx}`;
+        gl.activeTexture(gl.TEXTURE0 + idx);
+        this._bindTexturesLen = this._bindTexturesLen + 1;
+      } else {
+        gl.activeTexture(gl.TEXTURE0 + Number(this._textureActionIdMaps[name]));
+      }
       gl.bindTexture(targetType, v);
       if (!program._samplerMap[name]) {
         program._samplerMap[name] = idx;
@@ -423,7 +433,7 @@ export default class PlayGL {
         this._setUniform(name, type, v);
       } else if (new RegExp(`^${key}$`).test(name)) {
         this._setUniform(name, type, v);
-      } else {
+      } else if (name.indexOf(key) > -1) {
         this._setUniform(name, type, v);
       }
       if (this.options.autoUpdate) {
@@ -505,7 +515,15 @@ export default class PlayGL {
         const textureForamt = textureFormatMap[options.format];
         const { width, height, pixels } = img[0];
         gl.texImage2D(
-          gl.TEXTURE_2D, 0, gl[textureForamt?.internalFormat], width, height, 0, gl[textureForamt?.format], gl.UNSIGNED_BYTE, pixels
+          gl.TEXTURE_2D,
+          0,
+          gl[textureForamt?.internalFormat],
+          width,
+          height,
+          0,
+          gl[textureForamt?.format],
+          gl[options?.type || 'UNSIGNED_BYTE'],
+          pixels
         );
       } else {
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img[0]);

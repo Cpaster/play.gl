@@ -19,6 +19,18 @@ function computeBoneMatrices(bones, angle) {
   return bones;
 }
 
+function createRGBATexture(mat4s) {
+  let d = [];
+  mat4s.forEach(mat4 => {
+    d = d.concat(mat4);
+  })
+  return {
+    pixels: new Float32Array(d),
+    width: 4,
+    height: 4
+  };
+}
+
 (async () => {
   const playGl = new PlayGL(canvas, {
     isWebGL2: true
@@ -80,7 +92,7 @@ function computeBoneMatrices(bones, angle) {
 
   playGl.setUniform('projection', camera.projectionMatrix);
   playGl.setUniform('view', camera.viewMatrix);
-  playGl.setUniform('color', [0.0, 1.0, 0.0, 1.0]);
+  playGl.setUniform('color', [1.0, 0.0, 0.0, 1.0]);
 
   function render(time = 0) {
     const t = time * 0.001;
@@ -89,9 +101,17 @@ function computeBoneMatrices(bones, angle) {
     bones.forEach((bone, index) => {
       multiply(boneMatrices[index], bone, poseInverts[index]);
     });
-    boneMatrices.forEach((boneMatrice, index) => {
-      playGl.setUniform(`bones[${index}]`, boneMatrice);
+    const textureData = createRGBATexture(boneMatrices);
+
+    const texture = playGl.createTexture(playGl.glContext.TEXTURE_2D, [textureData], {
+      wrapS: 'MIRRORED_REPEAT',
+      wrapT: 'MIRRORED_REPEAT',
+      minFilter: 'NEAREST',
+      magFilter: 'NEAREST',
+      format: 'RGBA',
+      type: 'FLOAT'
     });
+    playGl.setUniform('boneMatrixTexture', texture);
     playGl.render();
     requestAnimationFrame(render);
   }
