@@ -4,7 +4,7 @@
 precision mediump float;
 #endif
 
-uniform samplerCube environmentMap;
+uniform samplerCube environmentMap1;
 
 in vec3 vTextureCoord;
 
@@ -12,7 +12,7 @@ out vec4 FragColor;
 
 void main() {
 
-  vec3 envColor = texture(environmentMap, vTextureCoord).rgb;
+  vec3 envColor = texture(environmentMap1, vTextureCoord).rgb;
     
   // HDR tonemap and gamma correct
   envColor = envColor / (envColor + vec3(1.0));

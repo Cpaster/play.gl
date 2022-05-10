@@ -64,7 +64,7 @@ export default class PlayGL {
   frameBuffer: PlayGLFrameBuffer;
   programs: PlayGlProgram[] = [];
   _bindTexturesLen: number = 1;
-  _textureActionIdMaps: Record<string, string> = {};
+  _textureActionIdMaps: Record<string, number> = {};
   // cubeFrameBuffers: PlayGLFrameBuffer[];
   blockUniforms: Record<
     string,
@@ -386,12 +386,12 @@ export default class PlayGL {
     if (/^sampler/.test(type)) {
       const targetType = type === 'samplerCube' ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D;
       const idx = this._bindTexturesLen;
-      if (!this._textureActionIdMaps[name]) {
-        this._textureActionIdMaps[name] = `${idx}`;
+      if (typeof this._textureActionIdMaps[name] !== 'number') {
+        this._textureActionIdMaps[name] = idx;
         gl.activeTexture(gl.TEXTURE0 + idx);
         this._bindTexturesLen = this._bindTexturesLen + 1;
       } else {
-        gl.activeTexture(gl.TEXTURE0 + Number(this._textureActionIdMaps[name]));
+        gl.activeTexture(gl.TEXTURE0 + this._textureActionIdMaps[name]);
       }
       gl.bindTexture(targetType, v);
       if (!program._samplerMap[name]) {
@@ -488,7 +488,7 @@ export default class PlayGL {
     const {gl} = this;
     const isCubeTexture = textureType === gl.TEXTURE_CUBE_MAP;
     this._max_texture_image_units = gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
-    gl.activeTexture(gl.TEXTURE0 + this._max_texture_image_units - 1);
+    // gl.activeTexture(gl.TEXTURE0 + this._max_texture_image_units - 1);
 
     const texture = gl.createTexture();
     gl.bindTexture(textureType, texture);

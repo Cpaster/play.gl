@@ -131,7 +131,7 @@ function createEnvCube(playGl: PlayGL, texture, camera) {
   const backgroundProgram = playGl.createProgram(backgroundFramentShader, backgroundVertexShader);
   playGl.use(backgroundProgram);
 
-  playGl.setUniform('environmentMap', texture);
+  playGl.setUniform('environmentMap1', texture);
   playGl.setUniform('projection', camera.projectionMatrix);
   playGl.setUniform('view', camera.viewMatrix);
   addCube(playGl, 2);
@@ -256,7 +256,7 @@ function createDiffuseCubeMap (playGl: PlayGL, cubeMapTexture) {
 
   const camera = new PerspectiveCamera(Math.PI / 2, 1.0, 0.1, 20);
 
-  playGl.setUniform('environmentMap', cubeMapTexture);
+  playGl.setUniform('environmentMap2', cubeMapTexture);
   playGl.setUniform('projection', camera.projectionMatrix);
 
   addCube(playGl, 2);
@@ -310,7 +310,7 @@ function createPrefilterMap(playGl: PlayGL, envMapTexture) {
 
   const camera = new PerspectiveCamera(Math.PI / 2, 1.0, 0.1, 20);
 
-  playGl.setUniform('environmentMap', envMapTexture);
+  playGl.setUniform('environmentMap3', envMapTexture);
   playGl.setUniform('projection', camera.projectionMatrix);
   const renderBuffer = cubeMapFBO.renderBuffer;
 
@@ -399,7 +399,7 @@ function createPrefilterMap(playGl: PlayGL, envMapTexture) {
     const mat3Views = mat4.fromMat4ToMat3([], camera.viewMatrix);
     const Mat4Views = mat4.toMat4([], mat3Views);
     playGl.setUniform('view', Mat4Views);
-    playGl.setUniform('environmentMap', cubeMapTexture);
+    playGl.setUniform('environmentMap1', cubeMapTexture);
 
     playGl.draw();
     gl.depthFunc(gl.LESS);
