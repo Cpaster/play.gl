@@ -3,7 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   mode: 'development',
-  entry: './example/blend/index.ts',
+  // entry: './example/blend/index.ts',
   // entry: './demo/texture/index.ts',
   // entry: './demo/light/index.ts',
   // entry: './example/instancingQuads/index.ts',
@@ -18,12 +18,12 @@ module.exports = {
   // entry: './example/lightCluster/index.ts',
   // entry: './example/PBR/index.ts',
   // entry: './example/PBRWithTexture/index.ts',
-  entry: './example/ibl/index.ts',
+  // entry: './example/ibl/index.ts',
   // entry: './example/addFont/index.ts',
   // entry: './example/particle/index.ts',
   // entry: './example/texture/index.ts',
   // entry: './example/particle_webgl2/index.ts',
-  // entry: './example/skins/index.ts',
+  entry: './example/skins/index.ts',
   module: {
     rules: [{
       test: /\.glsl$/,
