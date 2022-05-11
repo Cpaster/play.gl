@@ -488,7 +488,7 @@ export default class PlayGL {
     const {gl} = this;
     const isCubeTexture = textureType === gl.TEXTURE_CUBE_MAP;
     this._max_texture_image_units = gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
-    // gl.activeTexture(gl.TEXTURE0 + this._max_texture_image_units - 1);
+    gl.activeTexture(gl.TEXTURE0 + this._max_texture_image_units - 1);
 
     const texture = gl.createTexture();
     gl.bindTexture(textureType, texture);

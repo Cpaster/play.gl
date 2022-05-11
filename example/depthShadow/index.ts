@@ -50,7 +50,7 @@ async function renderScene(playGl: PlayGL) {
     wrapT: 'REPEAT'
   });
 
-  const texture2 = await playGl.loadTexture('https://t7.baidu.com/it/u=1595072465,3644073269&fm=193&f=GIF', {
+  const texture2 = await playGl.loadTexture('./example/common/img/wall.jpg', {
     wrapS: 'CLAMP_TO_EDGE',
     wrapT: 'CLAMP_TO_EDGE',
     minFilter: 'NEAREST',

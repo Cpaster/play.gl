@@ -58,7 +58,7 @@ const canvas = document.getElementById('page');
   });
 
   // playGl.setUniform('projection', perspectiveMatix);
-  playGl.setUniform('skybox', cubeTextures);
+  playGl.setUniform('skybox1', cubeTextures);
 
   playGl.use(program);
   // playGl.setUniform('projection', perspectiveMatix);
