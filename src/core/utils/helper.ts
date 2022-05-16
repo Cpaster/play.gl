@@ -145,3 +145,9 @@ export const getHDR = function(url: string, options) {
 export const getProto = function (v: unknown, type: string) {
   return Object.prototype.toString.call(v).toUpperCase() === `[OBJECT ${type?.toUpperCase()}]`;
 }
+
+export function formateDataToFloatArray(data) {
+  // typeof data[0] === "number"
+  // ? arrayToBuffer((data as unknown) as number[], Float32Array)
+  // : pointsToBuffer(data || [], Float32Array),
+};

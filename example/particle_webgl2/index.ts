@@ -62,22 +62,26 @@ const updateParticleVarying = {
   i_Position: {
     dimension: 2,
     type: 'FLOAT',
-    stride: 4 * 6
+    stride: 4 * 6,
+    rowOffset: 4
   },
   i_Age: {
     dimension: 1,
     type: 'FLOAT',
-    stride: 4 * 6
+    stride: 4 * 6,
+    rowOffset: 4
   },
   i_Life: {
     dimension: 1,
     type: 'FLOAT',
-    stride: 4 * 6
+    stride: 4 * 6,
+    rowOffset: 4
   },
   i_Velocity: {
     dimension: 2,
     type: 'FLOAT',
-    stride: 4 * 6
+    stride: 4 * 6,
+    rowOffset: 4
   }
 };
 
@@ -86,19 +90,22 @@ const renderVarying = {
     dimension: 2,
     type: 'FLOAT',
     stride: 4 * 6,
-    divisor: 1
+    divisor: 1,
+    rowOffset: 4
   },
   i_Age: {
     dimension: 1,
     type: 'FLOAT',
     stride: 4 * 6,
-    divisor: 1
+    divisor: 1,
+    rowOffset: 4
   },
   i_Life: {
     dimension: 1,
     type: 'FLOAT',
     stride: 4 * 6,
-    divisor: 1
+    divisor: 1,
+    rowOffset: 4
   }
 };
 
@@ -106,12 +113,14 @@ const spriteVarying = {
   i_Coord: {
     dimension: 2,
     type: 'FLOAT',
-    stride: 4 * 4
+    stride: 4 * 4,
+    rowOffset: 4
   },
   i_TexCoord: {
     dimension: 2,
     type: 'FLOAT',
-    stride: 4 * 4
+    stride: 4 * 4,
+    rowOffset: 4
   }
 }
 
@@ -144,13 +153,11 @@ function init(playGl: PlayGL, options) {
   const updateVAO1 = playGl.addBufferVAO([{
     buffer: buffer1,
     attribs: updateParticleVarying,
-    typeSize: 4
   }]);
 
   const updateVAO2 = playGl.addBufferVAO([{
     buffer: buffer2,
     attribs: updateParticleVarying,
-    typeSize: 4
   }]);
 
   playGl.use(renderProgram);
@@ -158,21 +165,21 @@ function init(playGl: PlayGL, options) {
   const renderVAO1 = playGl.addBufferVAO([{
     buffer: buffer1,
     attribs: renderVarying,
-    typeSize: 4
+    // typeSize: 4
   }, {
     buffer: spriteBuffer,
     attribs: spriteVarying,
-    typeSize: 4
+    // typeSize: 4
   }]);
 
   const renderVAO2 = playGl.addBufferVAO([{
     buffer: buffer2,
     attribs: renderVarying,
-    typeSize: 4
+    // typeSize: 4
   }, {
     buffer: spriteBuffer,
     attribs: spriteVarying,
-    typeSize: 4
+    // typeSize: 4
   }]);
 
   const textureData = randomRGData(512, 512);
